@@ -68,27 +68,27 @@ class TokenNomenclature(Enum):
 
 
 
-def openfile(path):
+
+
+def openfile(path: str):
     global fd
 
     try:
         fd = open(path, 'r')
 
     except IOError:
-        sys.exit("Error: File does not appear to exist.")
+        sys.exit("Error: File" + path + " does not appear to exist.")
 
 
-# TODO: len(varname) <= 30
+def perror_lexical(err_msg: str):
+    sys.exit(err_msg)
 
 
-def perror_lexical():
-    pass
-
-
-def lexical():
+def lexical() -> int:
     """potential keyword list."""
-    pot_keyword = []
-    """state board:
+    token = []
+    """
+        state board:
             0: default state / blank-character-as-input state
             1: alphabet state
             2: digit state
@@ -100,61 +100,76 @@ def lexical():
             8: EOF state ('')
             9: empty sequence state
     """
-    state = 0
+    stateid = 0
     status = False                          # non-final state
 
     while status is False:
         curr = fd.read(1)
+        token.append(curr)  # push current char into stack
+        if stateid == 0:
+            if len(token) > 30:
+                perror_lexical("Token buffer exceeded the maximum length of 30 characters")
 
-        if state == 0:
             if curr.isalpha():
-                state = 1                   # goto: check for alphanumeric
+                stateid = 1                   # goto: check for alphanumeric
             elif curr.isdigit():
-                state = 2                   # goto: final
+                stateid = 2                   # goto: final
             elif curr in ('+', '-', '*', '/', '=', '(', ')', ';', '[', ']', ',', '{', '}'):
-                state = 3
+                stateid = 3
             elif curr == '<':
-                state = 4
+                stateid = 4
             elif curr == '>':
-                state = 5
+                stateid = 5
             elif curr == ':':
-                state = 6
+                stateid = 6
             elif curr == '#':
-                state = 7
+                stateid = 7
             elif curr == '':
-                state = 8                   # EOF
+                stateid = 8                   # EOF
             elif curr.isspace():
                 continue                    # blank character, ignore
             else:
-                perror_lexical()            # error state
+                perror_lexical("Unrecognizable token " + '"' + curr + '".')            # error state
 
-        elif state == 1:
+        if stateid == 1:
             while curr.isalnum():
-                pot_keyword.append(curr)    # push current char into stack
                 curr = fd.read(1)
+                token.append(curr)
 
             if curr.isspace():
                 """ ------------------------------ FINAL ------------------------------ """
-                status = True                   # EOF or end of identifier sequence
+                status = True               # EOF or end of identifier sequence
                 """ ------------------------------ FINAL ------------------------------ """
+            else:
+                perror_lexical("Invalid variable identifier '" + "".join(token) +
+                               "'. Must include exclusively numbers or letters.")
 
-        elif state == 2:
-
+        if stateid == 2:
             while curr.isdigit():
-                pot_keyword.append(curr)
                 curr = fd.read(1)
+                token.append(curr)
 
             if curr.isdigit() is False:
                 if curr.isspace() is False:
-                    perror_lexical()            # not a digit, nor (EOF or empty sequence) => goto error state
+                    perror_lexical("Variable assignment at '" + "".join(token) +
+                                   "'ended erroneously. Must include exclusively digits.")
                 else:
                     """ ------------------------------ FINAL ------------------------------ """
-                    status = True               # EOF or end of digit sequence
+                    status = True            # EOF or end of digit sequence
                     """ ------------------------------ FINAL ------------------------------ """
 
+        if stateid == 4:
+            curr = fd.read(1)
+            if curr in ('=', '>'):
+                token.append(curr)
+                status = True
 
+            elif curr.isspace():
+                status = True
 
-
+            else:
+                token.append(curr)
+                perror_lexical("Unrecognizable token '" + "".join(token) + "'Did you mean '<=' or '<>'?")
 
 
 def main(argv):
