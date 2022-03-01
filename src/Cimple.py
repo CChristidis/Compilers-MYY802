@@ -1,3 +1,4 @@
+# Xrhstos Xristidhs 4526
 from enum import Enum
 import sys
 
@@ -112,10 +113,57 @@ tokens = {
 }
 
 
+def openfile(path):
+    global fd
 
+    try:
+        fd = open(path, 'r')
+
+    except IOError:
+        sys.exit("Error: File does not appear to exist.")
+
+
+# TODO: len(varname) <= 30
 
 
 
 def lex():
-    #TODO: len(varname) <= 30
-    print("")
+    """potential keyword list."""
+    pot_keyword = []
+    """state board:
+            0: default state / blank-character-as-input state
+            1: alphabet state
+            2: digit state
+            3: identifier state
+            4: arithmetic operator or delimiter state (+, -, *, /, =) or (, , ;, [, ], (, ), {, }
+            5: less-than sign state (<)
+            6: greater-than sign state (>)
+            7: colon state (:)
+            8: comment state (#)
+            9: EOF state ('')
+            10: empty sequence state
+    """
+    state = 0
+    status = 'notacc'
+
+    while status == 'notacc':
+        curr = fd.read(1)
+        if state == 0:
+            if curr.isalpha():
+                state = 1
+            elif curr.isdigit():
+                state = 2
+            elif curr.
+
+
+
+
+
+def main(argv):
+   input_file = argv[1]
+   openfile(input_file)
+   lex()
+
+
+if __name__ == "__main__":
+    main(sys.argv)
