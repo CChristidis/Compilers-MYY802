@@ -134,26 +134,40 @@ def lex():
             0: default state / blank-character-as-input state
             1: alphabet state
             2: digit state
-            3: identifier state
-            4: arithmetic operator or delimiter state (+, -, *, /, =) or (, , ;, [, ], (, ), {, }
-            5: less-than sign state (<)
-            6: greater-than sign state (>)
-            7: colon state (:)
-            8: comment state (#)
-            9: EOF state ('')
-            10: empty sequence state
+            3: arithmetic operator or delimiter state (+, -, *, /, =) or (, , ;, [, ], (, ), {, })
+            4: less-than sign state (<)
+            5: greater-than sign state (>)
+            6: colon state (:)
+            7: comment state (#)
+            8: EOF state ('')
+            9: empty sequence state
     """
     state = 0
-    status = 'notacc'
+    status = False  # non-final state
 
-    while status == 'notacc':
+    while status is False:
         curr = fd.read(1)
         if state == 0:
             if curr.isalpha():
-                state = 1
+                state = 1  # goto: check for alphanumeric
             elif curr.isdigit():
-                state = 2
-            elif curr.
+                state = 2  # goto: final
+            elif curr in ('+', '-', '*', '/', '=', '(', ')', ';', '[', ']', ',', '{', '}'):
+                state = 3
+            elif curr == '<':
+                state = 4
+            elif curr == '>':
+                state = 5
+            elif curr == ':':
+                state = 6
+            elif curr == '#':
+                state = 7
+
+        elif state == 1:
+            curr = fd.read(1)
+            while curr.isalnum():
+
+
 
 
 
