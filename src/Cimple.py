@@ -67,51 +67,6 @@ class TokenNomenclature(Enum):
     EOF = 43
 
 
-tokens = {
-    '+':            TokenNomenclature.PLUS,
-    '-':            TokenNomenclature.MINUS,
-    '*':            TokenNomenclature.ASTERISK,
-    '/':            TokenNomenclature.SLASH,
-    '<':            TokenNomenclature.LESSTHAN,
-    '>':            TokenNomenclature.GREATERTHAN,
-    '=':            TokenNomenclature.EQUALS,
-    '<=':           TokenNomenclature.LESSTHANEQUALS,
-    '>=':           TokenNomenclature.GREATERTHANEQUALS,
-    '<>':           TokenNomenclature.NOTEQUALS,
-    ':=':           TokenNomenclature.ASSIGN,
-    ';':            TokenNomenclature.SEMICOLON,
-    ',':            TokenNomenclature.COMMA,
-    ':':            TokenNomenclature.COLON,
-    '[':            TokenNomenclature.SQRBROPEN,
-    ']':            TokenNomenclature.SQRBRCLOSE,
-    '(':            TokenNomenclature.PARENTHOPEN,
-    ')':            TokenNomenclature.PARENTHCLOSE,
-    '{':            TokenNomenclature.CURLYBROPEN,
-    '}':            TokenNomenclature.CURLYBRCLOSE,
-    '.':            TokenNomenclature.FULLSTOP,
-    '#':            TokenNomenclature.COMMENT,
-    'program':      TokenNomenclature.PROGRAM,
-    'declare':      TokenNomenclature.DECLARE,
-    'if':           TokenNomenclature.IF,
-    'else':         TokenNomenclature.ELSE,
-    'while':        TokenNomenclature.WHILE,
-    'switchcase':   TokenNomenclature.SWITCHCASE,
-    'forcase':      TokenNomenclature.FORCASE,
-    'incase':       TokenNomenclature.INCASE,
-    'case':         TokenNomenclature.CASE,
-    'default':      TokenNomenclature.DEFAULT,
-    'not':          TokenNomenclature.NOT,
-    'and':          TokenNomenclature.AND,
-    'or':           TokenNomenclature.OR,
-    'function':     TokenNomenclature.FUNCTION,
-    'procedure':    TokenNomenclature.PROCEDURE,
-    'call':         TokenNomenclature.CALL,
-    'return':       TokenNomenclature.RETURN,
-    'in':           TokenNomenclature.IN,
-    'inout':        TokenNomenclature.INOUT,
-    'EOF':          TokenNomenclature.EOF
-}
-
 
 def openfile(path):
     global fd
@@ -126,8 +81,11 @@ def openfile(path):
 # TODO: len(varname) <= 30
 
 
+def perror_lexical():
+    pass
 
-def lex():
+
+def lexical():
     """potential keyword list."""
     pot_keyword = []
     """state board:
@@ -143,15 +101,16 @@ def lex():
             9: empty sequence state
     """
     state = 0
-    status = False  # non-final state
+    status = False                          # non-final state
 
     while status is False:
         curr = fd.read(1)
+
         if state == 0:
             if curr.isalpha():
-                state = 1  # goto: check for alphanumeric
+                state = 1                   # goto: check for alphanumeric
             elif curr.isdigit():
-                state = 2  # goto: final
+                state = 2                   # goto: final
             elif curr in ('+', '-', '*', '/', '=', '(', ')', ';', '[', ']', ',', '{', '}'):
                 state = 3
             elif curr == '<':
@@ -162,11 +121,36 @@ def lex():
                 state = 6
             elif curr == '#':
                 state = 7
+            elif curr == '':
+                state = 8                   # EOF
+            elif curr.isspace():
+                continue                    # blank character, ignore
+            else:
+                perror_lexical()            # error state
 
         elif state == 1:
-            curr = fd.read(1)
             while curr.isalnum():
+                pot_keyword.append(curr)    # push current char into stack
+                curr = fd.read(1)
 
+            if curr.isspace():
+                """ ------------------------------ FINAL ------------------------------ """
+                status = True                   # EOF or end of identifier sequence
+                """ ------------------------------ FINAL ------------------------------ """
+
+        elif state == 2:
+
+            while curr.isdigit():
+                pot_keyword.append(curr)
+                curr = fd.read(1)
+
+            if curr.isdigit() is False:
+                if curr.isspace() is False:
+                    perror_lexical()            # not a digit, nor (EOF or empty sequence) => goto error state
+                else:
+                    """ ------------------------------ FINAL ------------------------------ """
+                    status = True               # EOF or end of digit sequence
+                    """ ------------------------------ FINAL ------------------------------ """
 
 
 
@@ -174,9 +158,9 @@ def lex():
 
 
 def main(argv):
-   input_file = argv[1]
-   openfile(input_file)
-   lex()
+    input_file = argv[1]
+    openfile(input_file)
+    lexical()
 
 
 if __name__ == "__main__":
