@@ -2,72 +2,9 @@
 from enum import Enum
 import sys
 
-
-class TokenNomenclature(Enum):
-    # arithmetic operators:
-    PLUS = 0
-    MINUS = 1
-    ASTERISK = 2
-    SLASH = 3
-
-    # relational operators:
-    LESSTHAN = 4
-    GREATERTHAN = 5
-    EQUALS = 6              # =
-    LESSTHANEQUALS = 7
-    GREATERTHANEQUALS = 8
-    NOTEQUALS = 9           # <>
-
-    # assignment symbol
-    ASSIGN = 10             # :=
-
-    # delimeters
-    SEMICOLON = 11
-    COMMA = 12
-    COLON = 13
-
-    # parentheses and brackets
-    SQRBROPEN = 14          # [
-    SQRBRCLOSE = 15         # ]
-    PARENTHOPEN = 16        # (
-    PARENTHCLOSE = 17       # )
-    CURLYBROPEN = 18        # {
-    CURLYBRCLOSE = 19       # }
-
-    # End of program:
-    FULLSTOP = 20           # .
-
-    # comment symbol:
-    COMMENT = 21            # #
-
-    #  keywords:
-    PROGRAM = 22
-    DECLARE = 23
-    IF = 24
-    ELSE = 25
-    WHILE = 26
-    SWITCHCASE = 27
-    FORCASE = 28
-    INCASE = 29
-    CASE = 30
-    DEFAULT = 31
-    NOT = 32
-    AND = 33
-    OR = 34
-    FUNCTION = 35
-    PROCEDURE = 36
-    CALL = 37
-    RETURN = 38
-    IN = 39
-    INOUT = 40
-    INPUT = 41
-    PRINT = 42
-
-    # end of file
-    EOF = 43
-
-
-
+"""Global variables"""
+linenum = 1
+token = ''
 
 
 def openfile(path: str):
@@ -80,103 +17,232 @@ def openfile(path: str):
         sys.exit("Error: File" + path + " does not appear to exist.")
 
 
-def perror_lexical(err_msg: str):
-    sys.exit(err_msg)
+def printerror_lexical(err_msg: str, line):
+    sys.exit("Lexical Error: " + err_msg + " Line: " + str(line))
 
 
-def lexical() -> int:
-    """potential keyword list."""
-    token = []
-    """
-        state board:
-            0: default state / blank-character-as-input state
-            1: alphabet state
-            2: digit state
-            3: arithmetic operator or delimiter state (+, -, *, /, =) or (, , ;, [, ], (, ), {, })
-            4: less-than sign state (<)
-            5: greater-than sign state (>)
-            6: colon state (:)
-            7: comment state (#)
-            8: EOF state ('')
-            9: empty sequence state
-    """
-    stateid = 0
-    status = False                          # non-final state
+def printerror_parser(err_msg: str, nterminal_symbol):
+    sys.exit("Syntax Error: " + err_msg + " Non-terminal symbol: " + nterminal_symbol)
 
-    while status is False:
-        curr = fd.read(1)
-        token.append(curr)  # push current char into stack
-        if stateid == 0:
-            if len(token) > 30:
-                perror_lexical("Token buffer exceeded the maximum length of 30 characters")
 
-            if curr.isalpha():
-                stateid = 1                   # goto: check for alphanumeric
-            elif curr.isdigit():
-                stateid = 2                   # goto: final
-            elif curr in ('+', '-', '*', '/', '=', '(', ')', ';', '[', ']', ',', '{', '}'):
-                stateid = 3
-            elif curr == '<':
-                stateid = 4
-            elif curr == '>':
-                stateid = 5
-            elif curr == ':':
-                stateid = 6
-            elif curr == '#':
-                stateid = 7
-            elif curr == '':
-                stateid = 8                   # EOF
-            elif curr.isspace():
-                continue                    # blank character, ignore
-            else:
-                perror_lexical("Unrecognizable token " + '"' + curr + '".')            # error state
+class LexAutomaton:
+    def __init__(self, fd):
+        self.stateid = 0
+        self.token = []
+        self.fd = fd
 
-        if stateid == 1:
-            while curr.isalnum():
-                curr = fd.read(1)
-                token.append(curr)
+    @staticmethod
+    def check_int_overflow(self, intg_lst) -> bool:
+        strint = [str(intg) for intg in intg_lst]
+        joined_string = "".join(strint)
+        joined_int = int(joined_string)
 
-            if curr.isspace():
-                """ ------------------------------ FINAL ------------------------------ """
-                status = True               # EOF or end of identifier sequence
-                """ ------------------------------ FINAL ------------------------------ """
-            else:
-                perror_lexical("Invalid variable identifier '" + "".join(token) +
-                               "'. Must include exclusively numbers or letters.")
+        return abs(joined_int) > 2 ** 32 - 1
 
-        if stateid == 2:
-            while curr.isdigit():
-                curr = fd.read(1)
-                token.append(curr)
+    def automaton(self):
+        global linenum
+        eof = ''
+        """potential keyword list."""
+        token = self.token
+        stateid = self.stateid
+        fd = self.fd
+        """
+            state board:
+                0: default state / blank-character-as-input state
+                1: alphabet state
+                2: digit state
+                3: less-than sign state (<) 
+                4: greater-than sign state (>)
+                5: colon state (:)
+                6: comment state (#)
+        """
 
-            if curr.isdigit() is False:
-                if curr.isspace() is False:
-                    perror_lexical("Variable assignment at '" + "".join(token) +
-                                   "'ended erroneously. Must include exclusively digits.")
-                else:
-                    """ ------------------------------ FINAL ------------------------------ """
-                    status = True            # EOF or end of digit sequence
-                    """ ------------------------------ FINAL ------------------------------ """
+        status = False  # non-final state
 
-        if stateid == 4:
+        while status is False:
             curr = fd.read(1)
-            if curr in ('=', '>'):
-                token.append(curr)
-                status = True
+            token.append(curr)  # push current char into stack
+            if stateid == 0:
+                if curr.isalpha():
+                    stateid = 1
+                elif curr.isdigit():
+                    stateid = 2
+                elif curr in ('+', '-', '*', '/', '=', '(', ')', ';', '[', ']', ',', '{', '}', '.'):
+                    # keep in mind that '.' signals the end of the program.
+                    return token
+                elif curr == '<':
+                    stateid = 3
+                elif curr == '>':
+                    stateid = 4
+                elif curr == ':':
+                    stateid = 5
+                elif curr == '#':   # in this state we need to find another '#' symbol, before a potential eof occurs.
+                    first = 1
+                    stateid = 6
+                elif curr == eof:
+                    return 'eof'
+                elif curr.isspace() or '\n' in curr:
+                    if '\n' in curr:
+                        linenum += 1
+                    token.pop()
+                    continue  # blank character, ignore
+                else:
+                    printerror_lexical("unrecognizable token " + '"' + curr + '".', linenum)  # error state
 
-            elif curr.isspace():
-                status = True
+            if stateid == 1:
+                if curr.isalnum():
+                    if len(token) > 30:
+                        printerror_lexical("token buffer exceeded maximum length of 30 characters.", linenum)
 
-            else:
-                token.append(curr)
-                perror_lexical("Unrecognizable token '" + "".join(token) + "'Did you mean '<=' or '<>'?")
+                else:
+                    fd.seek(fd.tell() - 1)  # go back 1 character.
+                    token.pop()
+                    status = True
+
+            if stateid == 2:
+                if curr.isdigit():
+                    if self.check_int_overflow(self, token):
+                        printerror_lexical("integer overflow.", linenum)
+
+                elif curr.isalpha():
+                    printerror_lexical("variable assignment at '" + "".join(token) +
+                                       " 'ended erroneously. Must exclusively include digits.", linenum)
+
+                elif curr.isspace() or '\n' in curr:
+                    if '\n' in curr:
+                        linenum += 1
+                        token.pop()
+                    status = True
+
+                else:
+                    fd.seek(fd.tell() - 1)  # go back 1 character.
+                    token.pop()
+                    status = True
+
+            if stateid == 3:
+                curr = fd.read(1)
+                if curr in ('=', '>'):
+                    token.append(curr)
+                    status = True
+
+                elif curr.isspace() or '\n' in curr:
+                    if '\n' in curr:
+                        linenum += 1
+                    status = True
+
+                else:
+                    fd.seek(fd.tell() - 1)  # go back 1 character.
+                    status = True
+
+            if stateid == 4:
+                curr = fd.read(1)
+                if curr == '=':
+                    token.append(curr)
+                    status = True
+
+                elif curr.isspace() or '\n' in curr:
+                    if '\n' in curr:
+                        linenum += 1
+                    status = True
+
+                else:
+                    fd.seek(fd.tell() - 1)  # go back 1 character.
+                    status = True
+
+            if stateid == 5:
+                curr = fd.read(1)
+                if curr == '=':
+                    token.append(curr)
+                    status = True
+                else:
+                    if curr.isspace() and '\n' in curr is False:
+                        token.append(curr)
+                    printerror_lexical("unrecognizable token '" + "".join(token) + "'Do you mean ':=' ?", linenum)
+
+            if stateid == 6:
+                if first == 1:
+                    if curr == eof:
+                        printerror_lexical("unclosed comment.", linenum)
+                    first = 0
+                else:
+                    if curr == eof:
+                        printerror_lexical("unclosed comment.", linenum)
+                    elif curr == '#':
+                        stateid = 0  # comments have no further use in syntactical analysis
+                        token = []
+
+
+        return token
+
+
+def lexical():
+    aut = LexAutomaton(fd)
+    token = aut.automaton()
+    return "".join(token)
+
+# TODO: Create a method for every non-terminal symbol of Cimple's grammar, as shown in prof's notes.
+def parser():
+    global token
+    token = lexical()
+    program()
+
+
+def program():
+    global token
+
+    if token == "program":
+        token = lexical()  # program's ID (name)
+        if not (token[0].isalpha() and token.isalnum()):
+            printerror_parser("program's name must be an alphanumeric sequence, mandatorily starting with a letter.",
+                              "program")
+        block()
+    else:
+        printerror_parser("unexpected beginning of program's syntax.", "program")
+
+
+def block():
+    global token
+
+    token = lexical()
+    if token == "{":
+        declarations()
+        # subprograms()
+        # blockstatements()
+    else:
+        printerror_parser("'{' expected before block, not found.", "block")
+
+
+def declarations():
+    global token
+
+    token = lexical()
+    if token == "declare":
+        pass
+        # TODO: PAME XRHSTARA
+
+    """ we can opt not to declare any variable. """
+
+
+def check_file(path) -> bool:
+    return path[-3:] == ".ci"
 
 
 def main(argv):
     input_file = argv[1]
+
+    """ check if file has .ci extension. check_file function. """
+    # if not check_file(input_file):
+        # sys.exit("File extension not acceptable.")
+
     openfile(input_file)
-    lexical()
+    parser()
 
 
 if __name__ == "__main__":
     main(sys.argv)
+
+
+"""
+def is_blank(tk: str) -> bool:
+    return tk.isspace() or tk == '' or '\n' in tk
+"""
