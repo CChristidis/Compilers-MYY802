@@ -47,7 +47,6 @@ class LexAutomaton:
         self.token = []
         self.fd = fd
 
-
     def automaton(self):
         global linenum
         eof = ''
@@ -189,10 +188,11 @@ def lexical():
     return "".join(token)
 
 
-# TODO: Create a function for every non-terminal symbol of Cimple's grammar, as shown in prof's notes.
+
 def parser():
     global token
     token = lexical()
+    print(token + " Start")
     program()
 
 
@@ -201,10 +201,17 @@ def program():
 
     if token == "program":
         token = lexical()  # program's ID (name)
+        print(token + " program")
         if not acceptable_varname(token):
             printerror_parser("program's name must be an alphanumeric sequence, mandatorily starting with a letter.",
                               "program", linenum)
         block()
+
+        token = lexical()  # program's end ('.')
+        print(token + " program")
+        if token != '.':
+            printerror_parser("program's end with '.', not found.", "program", linenum)
+
     else:
         printerror_parser("illegal start of program's syntax.", "program", linenum)
 
@@ -213,11 +220,14 @@ def block():
     global token
 
     token = lexical()
+    print(token + " block")
     if token == "{":
         declarations()
         subprograms()
-        """ don't call lexical at the beginning of blockstatements!"""
-        # blockstatements()
+        blockstatements()
+        if token != '}':
+            printerror_parser("'}' expected, not found.", "block", linenum)
+
     else:
         printerror_parser("'{' expected before block, not found.", "block", linenum)
 
@@ -227,25 +237,25 @@ def declarations():
     global token
 
     token = lexical()
-    print(token)
+    print(token + " declarations")
     while token == "declare":       # Kleene star implementation for "declare" non-terminal
         varlist()
         token = lexical()
-        print(token)
+        print(token + " declarations")
 
 
 def varlist():
     global token
 
     token = lexical()  # variable's ID
-    print(token)
+    print(token + " varlist")
 
     if not acceptable_varname(token):
         printerror_parser("variable's identifier must be an alphanumeric sequence, mandatorily starting with a letter.",
                           "varlist", linenum)
 
     token = lexical()  # comma or semicolon
-    print(token)
+    print(token + " varlist")
 
     if token not in (',', ';'):
         printerror_parser("illegal variable declaration syntax.", "varlist", linenum)
@@ -255,11 +265,13 @@ def varlist():
 
     while True:
         token = lexical()  # variable's ID
-        print(token)
+        print(token + " varlist")
+
         if not acceptable_varname(token):
             printerror_parser("variable's identifier must be an alphanumeric sequence, "
                               "mandatorily starting with a letter.", "varlist", linenum)
         token = lexical()  # comma or semicolon
+        print(token + " varlist")
         if token not in (',', ';'):
             printerror_parser("illegal variable declaration syntax.", "varlist", linenum)
         if token == ';':
@@ -276,108 +288,323 @@ def subprogram():
 
     while token in ("function", "procedure"):
         token = lexical()  # subprogram's ID
-        print(token)
+        print(token + " subprogram")
         if not acceptable_varname(token):
             printerror_parser("subprogram's identifier must be an alphanumeric sequence, "
                               "mandatorily starting with a letter.", "subprogram", linenum)
 
         token = lexical()  # (
-        print(token)
+        print(token + " subprogram")
         if token != '(':
             printerror_parser("'(' expected before formal parameters declaration, not found.", "subprogram", linenum)
 
         parlist("formal")  # ends with ')'
 
         block()
-        #token = lexical()  # for blockstatements()
 
 
-
-# TODO: statements() , blockstatements() after implementing statement()
-def statements():
+def statements():  # no unused token
     global token
 
     token = lexical()
+    print(token + " statements")
 
     if token != ';':
         statement()
+        if token != ';':
+            printerror_parser("';' expected, not found.", "statements", linenum)
 
     else:
         token = lexical()  # semicolon
+        print(token + " statements")
         if token != ';':
             printerror_parser("';' expected, not found.", "statements", linenum)
+
+    token = lexical()  # '{'
+    print(token + " statements")
+    if token != '{':
+        printerror_parser("'{' expected, not found.", "statements", linenum)
+
+    token = lexical()
+    print(token + " statements")
+    statement()
+    while token == ';':
+        statement()
+
+    if token != '}':
+        printerror_parser("'}' expected, not found.", "statements", linenum)
+
+
+def blockstatements():  # 1 unused token
+    global token
+
+    # token = lexical()
+    # print(token + " blockstatements")
+
+    statement()
+    while token == ';':
+        statement()
 
 
 def statement():
     global token
-    # already have 1 unused token from statements()
+    # already have 1 unused token from statements() or blockstatements()
+    # after statement we necessarily need 1 left token
 
     # leave assignStat last
     if token == "if":
-        # ifStat() and elsepart()
+        if_whileStat("if")
     elif token == "while":
-        # whileStat()
+        if_whileStat("while")
     elif token == "switchcase":
-        # switchcaseStat()
+        switch_in_for_caseStat("switchcase")
     elif token == "forcase":
-        # forcaseStat()
+        switch_in_for_caseStat("forcase")
     elif token == "incase":
-        # incaseStat()
+        switch_in_for_caseStat("incase")
     elif token == "return":
-        # returnStat()
+        return_printStat("return")
     elif token == "call":
-        # callStat()
+        callStat()
     elif token == "input":
-        # inputStat()
+        inputStat()
     elif token == "print":
-        # printStat()
+        return_printStat("print")
     else:  # assignStat case
         if not acceptable_varname(token):
+            print(token + " statement")
             printerror_parser("parameter's identifier must be an alphanumeric sequence, "
                               "mandatorily starting with a letter.", "statement", linenum)
         token = lexical()  # :=
+        print(token + " statement")
         if token != ":=":
             printerror_parser("assignment syntax is incorrect.", "statement", linenum)
 
+        token = lexical()
+        print(token + " statement")
         expression()
 
 
-def expression():  # after expression() we have 1 token left.
+def inputStat():
+    global token
+
+    token = lexical()  # (
+    print(token + " inputStat")
+    if token != '(':
+        printerror_parser("'(' expected, not found.", "inputStat", linenum)
+
+    token = lexical()  # ID
+    print(token + " inputStat")
+    if not acceptable_varname(token):
+        printerror_parser("variable's identifier must be an alphanumeric sequence, "
+                          "mandatorily starting with a letter.", "inputStat", linenum)
+
+    token = lexical()  # )
+    print(token + " inputStat")
+    if token != ')':
+        printerror_parser("')' expected, not found.", "inputStat", linenum)
+
+    token = lexical()  # extra
+    print(token + " inputStat(extra)")
+
+
+def callStat():
+    global token
+
+    token = lexical()  # ID
+    print(token + " callStat")
+
+    if not acceptable_varname(token):
+        printerror_parser("subprogram's identifier must be an alphanumeric sequence, "
+                          "mandatorily starting with a letter.", "callStat", linenum)
+
+    token = lexical()  # (
+    print(token + " callStat")
+    if token != '(':
+        printerror_parser("'(' expected, not found.", "callStat", linenum)
+
+    parlist("actual")  # TODO: I THINK that parlist doesn't retain an unused token, investigate
+
+    token = lexical()  # )
+    print(token + " callStat")
+    if token != '(':
+        printerror_parser("'(' expected, not found.", "callStat", linenum)
+
+    token = lexical()  # extra
+    print(token + " callStat(extra)")
+
+
+def return_printStat(typ):
+    global token
+
+    token = lexical()  # '('
+    print(token + " return_printStat")
+
+    if token != '(':
+        printerror_parser("'(' expected, not found.", typ + "Stat", linenum)
+
+    token = lexical()
+    print(token + " return_printStat")
+
+    expression()
+
+    if token != ')':
+        printerror_parser("')' expected, not found.", typ + "Stat", linenum)
+
+
+def if_whileStat(conditional):  # 1 unused token
+    global token
+
+    token = lexical()  # '('
+    print(token + " if_whileStat")
+
+    if token != '(':
+        printerror_parser("'(' expected, not found.", conditional + "Stat", linenum)
+
+    condition()
+
+    if token != ')':
+        printerror_parser("')' expected, not found.", conditional + "Stat", linenum)
+
+    statements()
+
+    if conditional == "if":
+        elsepart()
+
+
+def switch_in_for_caseStat(selection_control):
+    global token
+
+    token = lexical()  # 'case' or "default"
+    print(token + " switch_in_for_caseStat")
+
+    while token == "case":
+        token = lexical()  # '('
+        print(token + " switch_in_for_caseStat")
+        if token != '(':
+            printerror_parser("'(' expected, not found.", selection_control + "Stat", linenum)
+        condition()
+        if token != ')':
+            printerror_parser("')' keyword expected, not found.", selection_control + "Stat", linenum)
+        statements()
+        token = lexical()
+        print(token + " switch_in_for_caseStat")
+
+    if token != "default" and selection_control in ("switchcase", "forcase"):
+        printerror_parser("'default' keyword expected, not found.", selection_control + "Stat", linenum)
+
+    if selection_control in ("switchcase", "forcase"):
+        statements()
+
+    token = lexical()  # extra
+    print(token + " switch_in_for_caseStat")
+
+
+def condition():    # 1 unused token after
+    global token
+
+    token = lexical() # "not" or '[' for boolfactor
+    print(token + " condition")
+
+    boolterm()      # or boolterm()...
+
+    while token == "or":
+        boolterm()
+
+
+def boolterm():     # 1 unused token after
+    boolfactor()    #  and boolfactor()...
+
+    while token == "and":
+        boolfactor()
+
+
+def boolfactor():   # 1 unused token after
+    global token
+
+    if token == "not":
+        token = lexical()
+        print(token + " boolfactor")
+        if token != '[':
+            printerror_parser("'[' expected, not found.", "boolfactor", linenum)
+
+        condition()
+        if token != ']':
+            printerror_parser("']' expected, not found.", "boolfactor", linenum)
+        token = lexical()  # for boolterm
+        print(token + " boolfactor")
+
+    elif token == "[":
+        condition()
+        if token != ']':
+            printerror_parser("']' expected, not found.", "boolfactor", linenum)
+        token = lexical()  # for boolterm
+        print(token + " boolfactor")
+
+    else:
+        expression()
+        token = lexical()  # tst
+        if token not in ('=', '<=', '>=', '>', '<', '<>'):
+            printerror_parser("relational oparator expected, not found.", "boolfactor", linenum)
+        token = lexical()
+        print(token + " boolfactor")
+        expression()
+
+
+def elsepart():  # 1 unused token
     global token
 
     token = lexical()
+    print(token + " elsepart")
+
+    if token == "else":
+        statements()
+        token = lexical()
+        print(token + " elsepart")
+
+
+def expression():  # after expression we have 1 token left.
+                   # needs 1 token before entering
+    global token
 
     if token in ('+', '-'):  # optionalSign
         token = lexical()
-        term()
+        print(token + " expression")
 
     term()
     token = lexical()
+    print(token + " expression")
     while token in ('+', '-'):  # Kleene star
         term()
-        token = lexical()
+
 
 def term():
     global token
+    # after term we have 1 token left.
     # already have one unused token before calling term()
     factor()
 
     token = lexical()
+    print(token + " term")
     while token in ('*', '/'):  # MUL_OP
         factor()
-
-
+        token = lexical()
+        print(token + " term")
 
 
 def factor():
     global token
     # already have one unused token before calling factor()
+    # no token left after factor return
     if isinstance(token, int):  # INTEGER
         return  # terminal symbol
 
     elif token == '(':
+        token = lexical()
+        print(token + " factor")
         expression()
         token = lexical()  # ')'
+        print(token + " factor")
 
         if token != ')':
             printerror_parser("')' expected, not found.", "factor", linenum)
@@ -393,6 +620,7 @@ def idtail():
     global token
 
     token = lexical()
+    print(token + " idtail")
 
     if token == '(':
         parlist("actual")
@@ -400,12 +628,11 @@ def idtail():
             printerror_parser("')' expected, not found.", "idtail", linenum)
 
 
-
 def parlist(arg_type):
     global token
 
     token = lexical()
-    print(token)
+    print(token + " parlist")
 
     while True:
         if token == ')':
@@ -422,6 +649,7 @@ def parlist(arg_type):
          """
         if token == ',':
             token = lexical()
+            print(token + " parlist")
             if not acceptable_varname(token):
                 printerror_parser("invalid token after ',' while declaring formal parameters.", arg_type + "parlist",
                                   linenum)
@@ -435,32 +663,22 @@ def paritem(arg_type):
                           linenum)
 
     if arg_type == "actual" and token == "in":
+        token = lexical()
+        print(token + " paritem")
         expression()
 
     token = lexical()  # parameter's ID
-    print(token)
+    print(token + " paritem")
 
     if not acceptable_varname(token):
         printerror_parser("parameter's identifier must be an alphanumeric sequence, "
                           "mandatorily starting with a letter.", arg_type+"paritem", linenum)
 
     token = lexical()  # comma or closing parenthesis
-    print(token)
+    print(token + " paritem")
 
     if token not in (')', ','):
         printerror_parser("illegal formal parameter declaration syntax, no ')' or ',' found.", arg_type+"paritem", linenum)
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 def check_file(path: str) -> bool:
@@ -481,7 +699,7 @@ def main(argv):
 
     openfile(input_file)
     parser()
-
+    # lexical()
 
 
 if __name__ == "__main__":
