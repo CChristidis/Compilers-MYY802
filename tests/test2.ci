@@ -12,7 +12,23 @@ program test2
 		{
 			# body in divides #
 			if (y = (y/x)*x + (y/x)*x)
+			{
+				switchcase 
+					case (x=1 and y=2)
+						print (5);
+					case (x=1 and y=2){
+						print (5)
+					};
+					case (x=1 and z=2){
+						print (7)
+					};
+					case (x = 3 or y = 2)
+						return (5);
+					default return(0); 
 				return ((x*y) + (y/x));
+				return ((x*y) + (y/x));
+				return ((x*y) + (y/x));
+			};
 			else
 				return (0);
 		}
