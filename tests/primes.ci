@@ -11,8 +11,8 @@ program primes
 		function divides(in x, in y)
 		{
 			# body in divides #
-			if (y = (y/x)*x)
-				return (1);
+			if (y = (y/x)*x + (y/x)*x)
+				return ((x*y) + (y/x));
 			else
 				return (0);
 		}
