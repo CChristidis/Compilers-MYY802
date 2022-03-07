@@ -21,17 +21,16 @@ program primes
 		i:=2;
 		while (i<x)
 		{
-			if (divides(in i, in x)=1)
+			if (divides(in i, in x, inout y)= (1 / x))
 				return(0);;
-			i := i + 1;
+			i := (i + 1) + (y / x);
 		};
 		return(1)
 	}
-	
 	# body of main #
 	i := 2;
 	while (i<=30)
 		if (isPrime(in i)=1)
-			print(i);;
+			print(i + ((x+y)*(z/x)));;
 }.
 		
