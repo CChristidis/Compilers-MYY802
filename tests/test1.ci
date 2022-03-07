@@ -1,4 +1,4 @@
-program factorial
+program test1
 {
     # declarations #
 	declare x;
