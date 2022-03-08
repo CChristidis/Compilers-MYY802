@@ -17,13 +17,13 @@ program test2
 			x := y;
    			sum:=0;
    			forcase
-    			case(x>0)
-        		{
-            			sum:=sum+x;
-           			x:=x-1;
-        		};
-    			default
-        			print(sum);
+    				case(x>0)
+        			{
+            				sum:=sum+x;
+           				x:=x-1;
+        			};
+    				default
+        				print(sum);
 		}		
 
 
@@ -49,7 +49,7 @@ program test2
 			if (y = (y/x)*x + (y/x)*x)
 			{
 				 switchcase
-					case (x=1 and y=2)
+					case (not[x=1 and y=2 or [y = ((x*x*y)/z) and [x=5 or y=13]]] or x = 5 and y = 7)
 						print (5);
 					case (x=1 and y=2){
 						print (3)
@@ -62,7 +62,7 @@ program test2
 					default return (0);
 				
 				incase
-					case (x=1 and y=2)
+					case (not[x=1 and y=2] or [x = 5 and y = 7])
 						print (5);
 					case (x=1 and y=2){
 						print (3)
@@ -93,7 +93,7 @@ program test2
 		{
 
 			forcase 
-					case (x=1 and y=2)
+					case (not[x=1 and y=2 or [y = ((x*x*y)/z) and [x=5 or y=13]]] or x = 5 and y = 7)
 						print (5);
 					case (x=1 and y=2){
 						input (y)
@@ -111,9 +111,9 @@ program test2
 				return(0);;
 			i := (i + 1) + (y / x);
 			incase
-					case (x=1 and y=2)
+					case (not[x=1 and y=2] or [x = 5 and y = 7])
 						print (5);
-					case (x=1 and y=2){
+					case (x=1 and y=2 or x = 5 or y = 7 and z = (13/x)){
 						print (3)
 					};
 					case (x=1 and z=2){
