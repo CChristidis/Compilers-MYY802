@@ -1,4 +1,5 @@
-# Xrhstos Xristidhs 4526
+# Xrhstos Xristidhs, 4526, cse84526
+# python3 Cimple.py cimple_test.ci
 import sys
 
 """Global variables"""
@@ -211,12 +212,13 @@ def program():
 
         token = lexical()  # program's end ('.')
         print(token + " program")
+
         if token != '.':
             token = lexical()  # program's end ('.')
             print(token + " program")
             if token != '.':
                 printerror_parser("program's end with '.', not found.", "program", linenum)
-
+        print("Syntax analysis ended successfully.")
     else:
         printerror_parser("illegal start of program's syntax.", "program", linenum)
 
@@ -230,6 +232,7 @@ def block():
         declarations()
         subprograms()
         blockstatements()
+        print("exiting block")
         if token != '}':
             printerror_parser("'}' expected, not found.", "block", linenum)
 
@@ -296,7 +299,7 @@ def subprograms():
 def subprogram():
     global token
     # token = lexical(). already have 1 token from declarations
-
+    print(token + " 1subprogram")
     while token in ("function", "procedure"):
         token = lexical()  # subprogram's ID  (e.g. isPrime)
         print(token + " subprogram")
@@ -312,8 +315,13 @@ def subprogram():
         parlist("formal")  # ends with ')'
 
         block()
+        print(token + " we here")
+        if token == "}":
+            token = lexical()
+            print(token + " subprograms")
     #token = lexical()
     # print(token + " subprograms")
+
 
 def parlist(arg_type):
     global token
@@ -600,7 +608,6 @@ def switch_in_for_caseStat(selection_control):
 
         token = lexical()
         print(token + " 1switch_in_for_caseStat")
-
 
 
     if token != "default" and selection_control in ("switchcase", "forcase"):
