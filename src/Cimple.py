@@ -195,7 +195,6 @@ def lexical():
 def parser():
     global token
     token = lexical()
-    print(token + " Start")
     program()
 
 
@@ -204,18 +203,15 @@ def program():
 
     if token == "program":
         token = lexical()  # program's ID (name)
-        print(token + " program")
         if not acceptable_varname(token):
             printerror_parser("program's name must be an alphanumeric sequence, mandatorily starting with a letter.",
                               "program", linenum)
         block()
 
         token = lexical()  # program's end ('.')
-        print(token + " program")
 
         if token != '.':
             token = lexical()  # program's end ('.')
-            print(token + " program")
             if token != '.':
                 printerror_parser("program's end with '.', not found.", "program", linenum)
         print("Syntax analysis ended successfully.")
@@ -227,12 +223,10 @@ def block():
     global token
 
     token = lexical()  # '{'
-    print(token + " block")
     if token == "{":
         declarations()
         subprograms()
         blockstatements()
-        print("exiting block")
         if token != '}':
             printerror_parser("'}' expected, not found.", "block", linenum)
 
@@ -245,29 +239,22 @@ def declarations():
     # always 1 token left
     global token
 
-    print("ENTERING DECLARATIONS")
-
     token = lexical()
-    print(token + " declarations1")
     while token == "declare":       # Kleene star implementation for "declare" non-terminal
         varlist()
         token = lexical()
-        print(token + " declarations2")
-
 
 
 def varlist():
     global token
 
     token = lexical()  # variable's ID
-    print(token + " varlist")
 
     if not acceptable_varname(token):
         printerror_parser("variable's identifier must be an alphanumeric sequence, mandatorily starting with a letter.",
                           "varlist", linenum)
 
     token = lexical()  # comma or semicolon
-    print(token + " varlist")
 
     if token not in (',', ';'):
         printerror_parser("illegal variable declaration syntax.", "varlist", linenum)
@@ -277,13 +264,11 @@ def varlist():
 
     while True:
         token = lexical()  # variable's ID
-        print(token + " varlist")
 
         if not acceptable_varname(token):
             printerror_parser("variable's identifier must be an alphanumeric sequence, "
                               "mandatorily starting with a letter.", "varlist", linenum)
         token = lexical()  # comma or semicolon
-        print(token + " varlist")
         if token not in (',', ';'):
             printerror_parser("illegal variable declaration syntax.", "varlist", linenum)
         if token == ';':
@@ -291,7 +276,6 @@ def varlist():
 
 
 def subprograms():
-    print("ENTERING SUBPROGRAMS")
     subprogram()
 
 
@@ -299,36 +283,27 @@ def subprograms():
 def subprogram():
     global token
     # token = lexical(). already have 1 token from declarations
-    print(token + " 1subprogram")
     while token in ("function", "procedure"):
         token = lexical()  # subprogram's ID  (e.g. isPrime)
-        print(token + " subprogram")
         if not acceptable_varname(token):
             printerror_parser("subprogram's identifier must be an alphanumeric sequence, "
                               "mandatorily starting with a letter.", "subprogram", linenum)
 
         token = lexical()  # (
-        print(token + " subprogram")
         if token != '(':
             printerror_parser("'(' expected before formal parameters declaration, not found.", "subprogram", linenum)
 
         parlist("formal")  # ends with ')'
 
         block()
-        print(token + " we here")
         if token == "}":
             token = lexical()
-            print(token + " subprograms")
-    #token = lexical()
-    # print(token + " subprograms")
 
 
 def parlist(arg_type):
     global token
 
     token = lexical()
-    print(token + " 1parlist"+arg_type)
-
     while True:
         if token == ')':
             return
@@ -344,7 +319,6 @@ def parlist(arg_type):
          """
         if token == ',':
             token = lexical()
-            print(token + " parlist"+arg_type)
             if not acceptable_varname(token):
                 printerror_parser("invalid token after ',' while declaring formal parameters.", arg_type + "parlist",
                                   linenum)
@@ -353,14 +327,12 @@ def parlist(arg_type):
 def paritem(arg_type):
     global token
 
-    print("--- entering " + arg_type +"paritem ---")
     if token not in ('in', 'inout'):
         printerror_parser("illegal formal parameter declaration syntax. Specify evaluation strategy.", arg_type+"paritem",
                           linenum)
 
     if arg_type == "actual" and token == "in":
         token = lexical()  # parameter's ID
-        print(token + " paritem ID" + arg_type)
         expression()
         if token not in (')', ','):
             printerror_parser("illegal formal parameter declaration syntax, no ')' or ',' found.", arg_type + "paritem",
@@ -368,7 +340,6 @@ def paritem(arg_type):
         return
 
     token = lexical()  # parameter's ID
-    print(token + " paritem ID" + arg_type)
 
     if not acceptable_varname(token):
 
@@ -376,7 +347,6 @@ def paritem(arg_type):
                           "mandatorily starting with a letter.", arg_type+"paritem", linenum)
 
     token = lexical()  # comma or closing parenthesis
-    print(token + " paritem comma"+arg_type)
 
     if token not in (')', ','):
 
@@ -388,10 +358,7 @@ def paritem(arg_type):
 def statements():  # no unused token
     global token, incaseflag
 
-    print("ENTERING STATEMENTS")
     token = lexical()
-
-    print(token + " hhstatements")
 
     if token != ';':
         if token != '{':
@@ -401,27 +368,22 @@ def statements():  # no unused token
 
         elif token == '{':
             token = lexical()
-            print(token + " statements")
             statement()
 
             while token == ';' or incaseflag == 1:
                 if incaseflag == 0:
                     token = lexical()
-                    print(token + " 3statements")
+
                 else:
                     incaseflag = 0
                 if token == '}':
                     token = lexical()  # ';
-                    print(token + " 4statements")
-                    print("EXITING STATEMENTS2")
                     return  # }; case
 
                 statement()
 
             if token == '}':
                 token = lexical()  # ';
-                print(token + " 4statements")
-                print("EXITING STATEMENTS3")
 
                 return  # }; case
 
@@ -432,28 +394,21 @@ def statements():  # no unused token
 
         else:
             printerror_parser("'{' expected, not found.", "statements", linenum)
-    print("here" + token)
-    print("EXITING STATEMENTS")
+
 
 
 
 def blockstatements():  # 1 unused token
     global token, incaseflag
 
-    print("ENTERING BLOCKSTATEMENTS")
-
-
-
     if token == '}':
         token = lexical()
-        print(token + " blockstatements")
 
     statement()
 
     while token == ';' or incaseflag == 1:
         if incaseflag == 0:
             token = lexical()
-            print(token + " blockstatements")
         else:
             incaseflag = 0
 
@@ -478,7 +433,6 @@ def statement():
     elif token == "return":  # ok
         return_printStat("return")
         token = lexical()
-        print(token + " statement")
     elif token == "call":
         callStat()
     elif token == "input":
@@ -486,19 +440,15 @@ def statement():
     elif token == "print":  # ok
         return_printStat("print")
         token = lexical()
-        print(token + " statement")
     elif token.isalnum():  # assignStat case # ok
         if not acceptable_varname(token):
-            print(token + " statement")
             printerror_parser("parameter's identifier must be an alphanumeric sequence, "
                               "mandatorily starting with a letter.", "statement", linenum)
         token = lexical()  # :=
-        print(token + " statement")
         if token != ":=":
             printerror_parser("assignment syntax is incorrect.", "statement", linenum)
 
         token = lexical()
-        print(token + " 1statement")
         expression()
 
 
@@ -508,37 +458,31 @@ def inputStat():
     global token
 
     token = lexical()  # (
-    print(token + " inputStat")
     if token != '(':
         printerror_parser("'(' expected, not found.", "inputStat", linenum)
 
     token = lexical()  # ID
-    print(token + " inputStat")
     if not acceptable_varname(token):
         printerror_parser("variable's identifier must be an alphanumeric sequence, "
                           "mandatorily starting with a letter.", "inputStat", linenum)
 
     token = lexical()  # )
-    print(token + " inputStat")
     if token != ')':
         printerror_parser("')' expected, not found.", "inputStat", linenum)
 
     token = lexical()  # extra
-    print(token + " inputStat(extra)")
 
 
 def callStat():
     global token
 
     token = lexical()  # ID
-    print(token + " callStat")
 
     if not acceptable_varname(token):
         printerror_parser("subprogram's identifier must be an alphanumeric sequence, "
                           "mandatorily starting with a letter.", "callStat", linenum)
 
     token = lexical()  # (
-    print(token + " callStat")
     if token != '(':
         printerror_parser("'(' expected, not found.", "callStat", linenum)
 
@@ -548,20 +492,17 @@ def callStat():
         printerror_parser("')' expected, not found.", "callStat", linenum)
 
     token = lexical()  # extra
-    print(token + " callStat(extra)")
 
 
 def return_printStat(typ):
     global token
 
     token = lexical()  # '('
-    print(token + " return_printStat")
 
     if token != '(':
         printerror_parser("'(' expected, not found.", typ + "Stat", linenum)
 
     token = lexical()
-    print(token + " 2return_printStat")
 
     expression()
 
@@ -573,7 +514,6 @@ def if_whileStat(conditional):  # 1 unused token
     global token
 
     token = lexical()  # '('
-    print(token + " if_whileStat")
 
     if token != '(':
         printerror_parser("'(' expected, not found.", conditional + "Stat", linenum)
@@ -594,11 +534,9 @@ def switch_in_for_caseStat(selection_control):
     global token, incaseflag
 
     token = lexical()  # 'case' or "default"
-    print(token + " switch_in_for_caseStat")
 
     while token == "case":
         token = lexical()  # '('
-        print(token + " switch_in_for_caseStat")
         if token != '(':
             printerror_parser("'(' expected, not found.", selection_control + "Stat", linenum)
         condition()
@@ -607,8 +545,6 @@ def switch_in_for_caseStat(selection_control):
         statements()
 
         token = lexical()
-        print(token + " 1switch_in_for_caseStat")
-
 
     if token != "default" and selection_control in ("switchcase", "forcase"):
         printerror_parser("'default' keyword expected, not found.", selection_control + "Stat", linenum)
@@ -617,12 +553,6 @@ def switch_in_for_caseStat(selection_control):
         statements()
     else:
         incaseflag = 1
-
-
-
-
-
-
 
 
 def condition():    # 1 unused token after
@@ -646,11 +576,8 @@ def boolfactor():   # 1 unused token after
 
     token = lexical()
 
-    print(token + " boolfactor")
-
     if token == "not":
         token = lexical()
-        print(token + " boolfactor")
         if token != '[':
             printerror_parser("'[' expected, not found.", "boolfactor", linenum)
 
@@ -658,14 +585,12 @@ def boolfactor():   # 1 unused token after
         if token != ']':
             printerror_parser("']' expected, not found.", "boolfactor", linenum)
         token = lexical()  # for boolterm
-        print(token + " boolfactor")
 
     elif token == "[":
         condition()
         if token != ']':
             printerror_parser("']' expected, not found.", "boolfactor", linenum)
         token = lexical()  # for boolterm
-        print(token + " boolfactor")
 
     else:
         expression()
@@ -673,7 +598,6 @@ def boolfactor():   # 1 unused token after
         if token not in ('=', '<=', '>=', '>', '<', '<>'):
             printerror_parser("relational operator expected, not found.", "boolfactor", linenum)
         token = lexical()
-        print(token + " before xpression2 boolfactor")
         expression()
 
 
@@ -681,12 +605,10 @@ def elsepart():  # 1 unused token
     global token
 
     token = lexical()
-    print(token + " elsepart")
 
     if token == "else":
         statements()
         token = lexical()
-        print(token + " elsepart")
 
 
 def expression():  # after expression we have 1 token left.
@@ -695,16 +617,12 @@ def expression():  # after expression we have 1 token left.
 
     if token in ('+', '-'):  # optionalSign
         token = lexical()
-        print(token + " expression")
 
     term()
 
-
     while token in ('+', '-'):  # Kleene star
         token = lexical()
-        print(token + " expression")
         term()
-
 
 
 def term():
@@ -715,9 +633,7 @@ def term():
 
     while token in ('*', '/'):  # MUL_OP
         token = lexical()
-        print(token + " term")
         factor()
-        print(token + " leaving term")
 
 
 def factor():
@@ -729,19 +645,14 @@ def factor():
     if token.isdigit():  # INTEGER
 
         token = lexical()
-        print(token + " 1factor")
         return  # terminal symbol
 
     elif token == '(':
         token = lexical()
-        print(token + " 2factor")
         expression()
-        print(token + " 3factor")
         if token != ')':
             printerror_parser("')' expected, not found.", "factor", linenum)
         token = lexical()
-        print(token + " 4factor")
-
 
     else:  # variable or subprogram case
         if not acceptable_varname(token):
@@ -754,16 +665,12 @@ def idtail():
     global token
 
     token = lexical()  # if you find relational goto boolfactor
-    print(token + " idtail")
 
     if token == '(':
         parlist("actual")
         if token != ')':
             printerror_parser("')' expected, not found.", "idtail", linenum)
         token = lexical()
-        print(token + " idtail2")
-
-
 
 
 def check_file(path: str) -> bool:
@@ -788,6 +695,4 @@ def main(argv):
 
 if __name__ == "__main__":
     main(sys.argv)
-
-
 
