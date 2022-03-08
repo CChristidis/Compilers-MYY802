@@ -678,7 +678,7 @@ def check_file(path: str) -> bool:
 
 
 def get_extn(file: str) -> str:
-    idx = file.find('.')
+    idx = file.rindex('.')
     return file[idx:]
 
 
@@ -695,4 +695,6 @@ def main(argv):
 
 if __name__ == "__main__":
     main(sys.argv)
+
+
 
