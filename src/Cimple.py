@@ -1,5 +1,5 @@
 # Xrhstos Xristidhs, 4526, cse84526
-# python3 Cimple.py cimple_test.ci
+# python3 Cimple.py Cimple_test.ci
 import sys
 
 """Global variables"""
@@ -16,7 +16,7 @@ def openfile(path: str):
         fd = open(path, 'r')
 
     except IOError:
-        sys.exit("Error: File" + path + " does not appear to exist.")
+        sys.exit("Error: File " + path + " does not appear to exist.")
 
 
 def printerror_lexical(err_msg: str, line: int):
