@@ -9,20 +9,21 @@ program test2
 		declare i;
 			
 		
-		function summation(in x, inout sum)
+		function summation(in y, inout sum)
 		{
     			declare x,sum;
 
-    			input(x);
-   			 sum:=0;
-   			 forcase
-    			    case(x>0)
+    			input(y);
+			x := y;
+   			sum:=0;
+   			forcase
+    			case(x>0)
         		{
             			sum:=sum+x;
            			x:=x-1;
         		};
-    				default
-        				print(sum);
+    			default
+        			print(sum);
 		}		
 
 
