@@ -7,9 +7,43 @@ program test2
 	{
 		# declarations for isPrime #
 		declare i;
+			
 		
+		function summation(in x, inout sum)
+		{
+    			declare x,sum;
+
+    			input(x);
+   			 sum:=0;
+   			 forcase
+    			    case(x>0)
+        		{
+            			sum:=sum+x;
+           			x:=x-1;
+        		};
+    				default
+        				print(sum);
+		}		
+
+
+			
 		procedure divides(in x, in y)
 		{
+			
+			function countDigits(in x, inout y)
+			{
+   				declare x, count;
+
+    				input(x);
+    				count := 0;
+    				while (x>0)
+    				{
+       			 	x := x/10;
+        			count := count+1;
+    				};
+    				print(count);
+			}
+			
 			# body in divides #
 			if (y = (y/x)*x + (y/x)*x)
 			{
@@ -46,11 +80,15 @@ program test2
 			};
 			else
 				return (0);
+			
 		}
+		
+		
+		
 		
 		# body isPrime #
 		i:= x + 2 + (x/y)*(x*z);
-		while (i<x)
+		while (i<>x)  # while i != x #
 		{
 
 			forcase 
@@ -64,7 +102,7 @@ program test2
 						print (6)
 					};
 					case (x = 3 or y = 2){
-						call somefunction(in (x + y), inout x, in (x*y)/z)
+						call summation(in (x + y), inout x, in (x*y)/z)
 					};
 					default return(0); 
 
