@@ -25,11 +25,7 @@ program test2
 					case (x = 3 or y = 2)
 						return (5);
 					default return (0);
-
-				return ((x*y) + (y/x));
-				return ((x*y) + (y/x));
-				return ((x*y) + (y/x));	
-
+				
 				incase
 					case (x=1 and y=2)
 						print (5);
@@ -41,6 +37,12 @@ program test2
 					};
 					case (x = 3 or y = 2)
 						return (5);
+
+				return ((x*y) + (y/x));
+				return ((x*y) + (y/x));
+				return ((x*y) + (y/x));	
+
+				
 			};
 			else
 				return (0);
@@ -69,6 +71,17 @@ program test2
 			if (divides(in i, in x, inout y)= (1 / x))
 				return(0);;
 			i := (i + 1) + (y / x);
+			incase
+					case (x=1 and y=2)
+						print (5);
+					case (x=1 and y=2){
+						print (3)
+					};
+					case (x=1 and z=2){
+						print (7)
+					};
+					case (x = 3 or y = 2)
+						return (5);
 		};
 		return(1)
 	}
