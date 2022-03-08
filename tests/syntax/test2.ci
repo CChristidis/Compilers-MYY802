@@ -8,7 +8,7 @@ program test2
 		# declarations for isPrime #
 		declare i;
 		
-		function divides(in x, in y)
+		procedure divides(in x, in y)
 		{
 			# body in divides #
 			if (y = (y/x)*x + (y/x)*x)
