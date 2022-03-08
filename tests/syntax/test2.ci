@@ -49,7 +49,7 @@ program test2
 		}
 		
 		# body isPrime #
-		i:=2;
+		i:= x + 2 + (x/y)*(x*z);
 		while (i<x)
 		{
 
