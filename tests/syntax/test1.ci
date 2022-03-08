@@ -1,0 +1,17 @@
+program test1
+{
+    # declarations #
+	declare x;
+	declare i,fact;
+
+    # main #
+	input(x);
+	fact:=1;
+	i:=1;
+	while (primes(in x, in y) >= primes(in x, in z))
+	{
+		fact:=fact*i;
+		i:=i+1;
+	};
+	print(fact);
+}.
