@@ -248,20 +248,6 @@ def declarations():
 def varlist():
     global token
 
-    token = lexical()  # variable's ID
-
-    if not acceptable_varname(token):
-        printerror_parser("variable's identifier must be an alphanumeric sequence, mandatorily starting with a letter.",
-                          "varlist", linenum)
-
-    token = lexical()  # comma or semicolon
-
-    if token not in (',', ';'):
-        printerror_parser("illegal variable declaration syntax.", "varlist", linenum)
-
-    if token == ';':
-        return
-
     while True:
         token = lexical()  # variable's ID
 
