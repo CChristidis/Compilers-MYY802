@@ -1,13 +1,15 @@
-program test2 
+program summation
 {
-	# declarations for main #
-	declare i;
+   	# declarations for main #
+	declare i, a, b, c, d;
+	declare e, f, g, h, i;
+	declare nikosKoukos123;
 	
 	function isPrime(in x)
 	{
 		# declarations for isPrime #
 		declare i;
-			
+		declare y;
 		
 		function summation(in y, inout sum)
 		{
@@ -16,18 +18,21 @@ program test2
     			input(y);
 			x := y;
    			sum:=0;
-   			forcase
-    				case(x>0)
-        			{
-            				sum:=sum+x;
-           				x:=x-1;
-        			};
+   			switchcase
+    				case (not[x=1 and y=2 or [y = ((x*x*y)/z) and [x=5 or y=13]]] or x = 5 and y = 7)
+						print (5);
+					case (x=1 and y=2){
+						print (3)
+					}
+					case (x=1 and z=2){
+						print (7)
+					}
+					case (x = 3 or y = 2)
+						return (5);
     				default
         				print(sum);
-		}		
-
-
-			
+		}
+		
 		procedure divides(in x, in y)
 		{
 			
@@ -37,98 +42,72 @@ program test2
 
     				input(x);
     				count := 0;
+
     				while (x>0)
     				{
        			 	x := x/10;
         			count := count+1;
     				};
     				print(count);
+				
+				incase 
+					case(not[x=1 and y=2 or [y = ((x*x*y)/z) and [x=5 or y=13]]] or x = 5 and y = 7)
+						print (5);
+					case (x=1 and y=2){
+						print (3)
+					}
+					case (x=1 and z=2){
+						print (7)
+					}
+					case (x = 3 or y = 2)
+						return (5);
+					
 			}
-			
 			# body in divides #
 			if (y = (y/x)*x + (y/x)*x)
 			{
-				 switchcase
-					case (not[x=1 and y=2 or [y = ((x*x*y)/z) and [x=5 or y=13]]] or x = 5 and y = 7)
-						print (5);
-					case (x=1 and y=2){
-						print (3)
-					};
-					case (x=1 and z=2){
-						print (7)
-					};
-					case (x = 3 or y = 2)
-						return (5);
-					default return (0);
-				
-				incase
-					case (not[x=1 and y=2] or [x = 5 and y = 7])
-						print (5);
-					case (x=1 and y=2){
-						print (3)
-					};
-					case (x=1 and z=2){
-						print (7)
-					};
-					case (x = 3 or y = 2)
-						return (5);
-
+				 
 				return ((x*y) + (y/x));
 				return ((x*y) + (y/x));
-				return ((x*y) + (y/x));	
-
+				return ((x*y) + (y/x));
 				
-			};
+				forcase
+					default 
+						return (0);
+			}
 			else
 				return (0);
 			
 		}
-		
-		
-		
-		
-		# body isPrime #
+
 		i:= x + 2 + (x/y)*(x*z);
+
 		while (i<>x)  # while i != x #
 		{
 
-			forcase 
-					case (not[x=1 and y=2 or [y = ((x*x*y)/z) and [x=5 or y=13]]] or x = 5 and y = 7)
-						print (5);
-					case (x=1 and y=2){
-						input (y)
-					};
-					case (x=1 and z=2){
-						print (7);
-						print (6)
-					};
-					case (x = 3 or y = 2){
-						call summation(in (x + y), inout x, in (x*y)/z)
-					};
-					default return(0); 
-
 			if (divides(in i, in x, inout y)= (1 / x))
 				return(0);;
-			i := (i + 1) + (y / x);
-			incase
-					case (not[x=1 and y=2] or [x = 5 and y = 7])
+
+			switchcase
+    				case (not[x=1 and y=2 or [y = ((x*x*y)/z) and [x=5 or y=13]]] or x = 5 and y = 7)
 						print (5);
-					case (x=1 and y=2 or x = 5 or y = 7 and z = (13/x)){
+					case (x=1 and y=2){
 						print (3)
-					};
+					}
 					case (x=1 and z=2){
 						print (7)
-					};
+					}
 					case (x = 3 or y = 2)
 						return (5);
+    				default
+        				print(sum);
 		};
 		return(1)
 	}
-	# body of main #
+	
 	i := 2;
 	while (i<=30)
 		if (isPrime(in i)=1)
 			print(i + ((x+y)*(z/x)));;
-	
+
 }.
-		
