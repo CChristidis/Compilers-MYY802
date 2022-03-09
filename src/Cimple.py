@@ -7,6 +7,7 @@ linenum = 1
 token = ''
 fd = ''
 
+
 def openfile(path: str):
     global fd
 
@@ -206,7 +207,7 @@ def program():
                               "program", linenum)
         token = lexical()
         block()
-        print("Syntactic analysis ended successfully.")
+        print("Syntax analysis ended successfully.")
 
     else:
         printerror_parser("illegal start of program's syntax.", "program", linenum)
