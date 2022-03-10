@@ -201,6 +201,7 @@ def program():
 
     if token == "program":
         token = lexical()  # program's ID (name)
+        print("Program '" + token + "' has started.")
         if not acceptable_varname(token):
             printerror_parser("program's name must be an alphanumeric sequence, mandatorily starting with a letter.",
                               "program", linenum)
