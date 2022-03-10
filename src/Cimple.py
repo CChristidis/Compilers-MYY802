@@ -645,8 +645,8 @@ def get_extn(file: str) -> str:
     return file[idx:]
 
 
-def main(argv):
-    input_file = argv[1]
+if __name__ == "__main__":
+    input_file = sys.argv[1]
 
     """ check if file has .ci extension. check_file function. """
     if not check_file(input_file):
@@ -654,10 +654,5 @@ def main(argv):
 
     openfile(input_file)
     parser()
-
-
-if __name__ == "__main__":
-    main(sys.argv)
-
 
 
