@@ -385,31 +385,22 @@ def statement():
     # after statement we necessarily NEED 1 left token
     # leave assignStat last
     if token == "if":  # ok
-        token = lexical()
         if_whileStat("if")
     elif token == "while":  # ok
-        token = lexical()
         if_whileStat("while")
     elif token == "switchcase":
-        token = lexical()
         switch_in_for_caseStat("switchcase")
     elif token == "forcase":
-        token = lexical()
         switch_in_for_caseStat("forcase")
     elif token == "incase":
-        token = lexical()
         switch_in_for_caseStat("incase")
     elif token == "return":  # ok
-        token = lexical()
         return_printStat("return")
     elif token == "call":
-        token = lexical()
         callStat()
     elif token == "input":
-        token = lexical()
         inputStat()
     elif token == "print":  # ok
-        token = lexical()
         return_printStat("print")
     elif token.isalnum():  # assignStat case # ok
         if not acceptable_varname(token):
@@ -425,6 +416,8 @@ def statement():
 
 def inputStat():
     global token
+
+    token = lexical()
 
     if token != '(':
         printerror_parser("'(' expected, not found.", "inputStat", linenum)
@@ -445,6 +438,8 @@ def inputStat():
 def callStat():
     global token
 
+    token = lexical()
+
     if not acceptable_varname(token):
         printerror_parser("subprogram's identifier must be an alphanumeric sequence, "
                           "mandatorily starting with a letter.", "callStat", linenum)
@@ -462,6 +457,8 @@ def callStat():
 def return_printStat(typ):
     global token
 
+    token = lexical()
+
     if token != '(':
         printerror_parser("'(' expected, not found.", typ + "Stat", linenum)
 
@@ -477,6 +474,8 @@ def return_printStat(typ):
 
 def if_whileStat(conditional):  # 1 unused token
     global token
+
+    token = lexical()
 
     if token != '(':
         printerror_parser("'(' expected, not found.", conditional + "Stat", linenum)
@@ -499,6 +498,8 @@ def if_whileStat(conditional):  # 1 unused token
 def elsepart():  # 1 unused token
     global token
 
+    # already has 1 token from statements()
+
     if token == "else":
         token = lexical()
         statements()
@@ -506,6 +507,8 @@ def elsepart():  # 1 unused token
 
 def switch_in_for_caseStat(selection_control):
     global token
+
+    token = lexical()
 
     while token == "case":
         token = lexical()  # '('
