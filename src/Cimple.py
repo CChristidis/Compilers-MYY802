@@ -67,7 +67,7 @@ class LexAutomaton:
 
         status = False  # non-final state
 
-        while status is False:
+        while not status:
             curr = fd.read(1)
             token.append(curr)  # push current char into stack
             if stateid == 0:
@@ -102,7 +102,7 @@ class LexAutomaton:
                     if len(token) > 30:
                         printerror_lexical("token buffer exceeded maximum length of 30 characters.", linenum)
 
-                else:
+                else:  # signals the end of a declaration!
                     fd.seek(fd.tell() - 1)  # go back 1 character.
                     token.pop()
                     status = True
@@ -122,7 +122,7 @@ class LexAutomaton:
                         token.pop()
                     status = True
 
-                else:
+                else:  # signals the end of a declaration!
                     fd.seek(fd.tell() - 1)  # go back 1 character.
                     token.pop()
                     status = True
@@ -163,7 +163,7 @@ class LexAutomaton:
                     token.append(curr)
                     status = True
                 else:
-                    if is_blank(curr) is False:
+                    if not is_blank(curr):
                         token.append(curr)
                     printerror_lexical("unrecognizable token '" + "".join(token) + "'Do you mean ':=' ?", linenum)
 
