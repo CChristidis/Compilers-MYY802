@@ -1,5 +1,4 @@
 # Xrhstos Xristidhs, 4526, cse84526
-# python3 Cimple.py cimple_test.ci
 import sys
 
 """Global variables"""
@@ -456,8 +455,8 @@ def callStat():
 
     parlist("actual")  # TODO: I THINK that parlist retain an unused token so no need for an extra one, investigate
 
-    if token != ')':
-        printerror_parser("')' expected, not found.", "callStat", linenum)
+    # if token != ')':
+        # printerror_parser("')' expected, not found.", "callStat", linenum)
 
 
 def return_printStat(typ):
