@@ -189,7 +189,6 @@ def lexical():
     return token
 
 
-
 def parser():
     global token
     token = lexical()
@@ -223,6 +222,11 @@ def block():
         blockstatements()
         if token != '}':
             printerror_parser("'}' expected, not found.", "block", linenum)
+        """
+        we need this token because blockstatements ends with '}'
+        and the only non-terminal symbol which deploys block()
+        needs 1 token on the exit for its while-loop
+        """
         token = lexical()
 
     else:
