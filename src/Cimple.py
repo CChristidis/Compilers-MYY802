@@ -225,7 +225,8 @@ def block():
         """
         we need this token because blockstatements ends with '}'
         and the only non-terminal symbol which deploys block()
-        needs 1 token on the exit for its while-loop
+        needs 1 token on the exit for its while-loop. Else, 
+        we will exit subprograms without noticing.
         """
         token = lexical()
 
