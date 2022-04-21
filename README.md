@@ -5,9 +5,9 @@ Cimple resembles C syntactically.
 
 # Cimple's syntax grammar in BNF
 
-program → program ID \n
-block
-.
+program → program ID  <br>
+block  <br>
+.  <br>
 
 ; a block consists of declarations , subprograms and statements
 block → {
