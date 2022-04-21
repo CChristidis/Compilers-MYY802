@@ -156,7 +156,7 @@ idtail → ( actualparlist )   <br>
 optionalSign → ADD_OP   <br>
 | 𝜀   <br>
   <br>
-;   #########################   <br>
+
 ;   lexer rules : relational , arithentic operations ,   <br>
 ;   integer values and ids   <br>
 REL_OP → = | <= | >= | > | < | <>   <br>
