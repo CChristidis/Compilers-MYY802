@@ -5,7 +5,7 @@ Cimple resembles C syntactically.
 
 # Cimple's syntax grammar in BNF
 
-program → program ID
+program → program ID \n
 block
 .
 
