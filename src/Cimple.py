@@ -122,6 +122,7 @@ class ExceptionHandler(object):
     class Break(Exception):
       """Break out of the with statement"""
 
+
     def __init__(self, value):
         self.value = value
 
@@ -131,8 +132,11 @@ class ExceptionHandler(object):
     def __exit__(self, etype, value, traceback):
         error = self.value.__exit__(etype, value, traceback)
         if etype == self.Break:
+            print('Nested supbrogram found. Aborting c file creation.')
             return True
         return error
+
+
 
 
 def declared_vars_to_c(declared_vars_list: list):
@@ -142,18 +146,27 @@ def declared_vars_to_c(declared_vars_list: list):
     return "".join(declared_vars_list_to_c)
 
 def create_c_file():
+    has_nests = False
+
     with ExceptionHandler(open('test.c', 'w', encoding='utf-8')) as c_file:
         c_file.write("# include <stdio.h> \n \n")
         c_file.write("int main(int argc, char **argv) { \n")
-        # add main subrpogram's declarations
-        c_file.write("\t" + declared_vars_to_c(declared_vars) + "\n")
 
 
+        for q, q_label in all_quads.items():
+            if q.op == "begin_block" and q.oprnd1 == program_name:
+                c_file.write("\t" + declared_vars_to_c(declared_vars) + "\n")
+                continue
+                
+            elif q.op == "begin_block" and q.oprnd1 != program_name:
+                has_nests = True
+                raise ExceptionHandler.Break
 
-        #raise ExceptionHandler.Break
 
         c_file.write("}")
-    #os.remove("test.c")
+
+    if has_nests:
+        os.remove("test.c")
 
 
 def create_int_file():
