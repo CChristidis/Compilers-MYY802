@@ -66,7 +66,7 @@ def nextQuad():
     return label
 
 
-def genQuad(op, oprnd1='_', oprnd2='_', target='_'):
+def genQuad(op, oprnd1, oprnd2, target):
     global label, all_quads
 
     quad = Quad(op, oprnd1, oprnd2, target)
@@ -409,14 +409,14 @@ def block(subprogramID:str):
         declarations(subprogramID)
         subprograms()
 
-        genQuad("begin_block", subprogramID)
+        genQuad("begin_block", subprogramID, '_', '_')
         blockstatements()
 
         # H halt emfanizetai mono sto kuriws programma. Topotheteitai prin apo to end_block.
         if subprogramID == program_name:
-            genQuad("halt")
+            genQuad("halt", '_', '_', '_')
 
-        genQuad('end_block', subprogramID)
+        genQuad('end_block', subprogramID, '_', '_')
 
         if token != '}':
             printerror_parser("'}' expected, not found.", "block", linenum)
@@ -542,7 +542,7 @@ def actualparitem():
 
         expressionParameter = expression()
 
-        genQuad("par", expressionParameter, "cv")
+        genQuad("par", expressionParameter, "cv", '_')
 
 
 
@@ -554,7 +554,7 @@ def actualparitem():
             printerror_parser("parameter's identifier must be an alphanumeric sequence, "
                               "mandatorily starting with a letter.", "actualparitem", linenum)
 
-        genQuad("par", parameterID, "ref")
+        genQuad("par", parameterID, "ref", '_')
 
         token = lexical()  # comma or closing parenthesis
 
@@ -675,7 +675,7 @@ def inputStat():
 
     inputID = token
 
-    genQuad("in", inputID)
+    genQuad("in", inputID, '_', '_')
 
     if not acceptable_varname(token):
         printerror_parser("variable's identifier must be an alphanumeric sequence, "
@@ -707,7 +707,7 @@ def callStat():
     parlist("actual")  # TODO: I THINK that parlist retain an unused token so no need for an extra one, investigate
 
     # call subprogram after we have created the actual parameters.
-    genQuad("call", called_subprogram)
+    genQuad("call", called_subprogram, '_', '_')
 
 
 
@@ -724,10 +724,10 @@ def return_printStat(typ: str):
     source = expression()
 
     if typ == "return":
-        genQuad("ret", source)
+        genQuad("ret", source, '_', '_')
 
     elif typ == "print":
-        genQuad("out", source)
+        genQuad("out", source, '_', '_')
 
 
     if token != ')':
@@ -768,7 +768,7 @@ def if_whileStat(conditional: str):  # 1 unused token
     if conditional == "if":
         # stores the label of the quad that suceeds the else part
         ifList = makeList(nextQuad())
-        genQuad("jump")
+        genQuad("jump", '_', '_', '_')
 
     backpatch(condition_False, nextQuad())
 
@@ -829,7 +829,7 @@ def switch_in_for_caseStat(selection_control: str):
 
         if selection_control == "switchcase":
             t = makeList(nextQuad())
-            genQuad("jump")
+            genQuad("jump", '_', '_', '_')
 
         if selection_control == "forcase":
             genQuad("jump", '_', '_', firstCondQuad)
@@ -984,11 +984,11 @@ def boolfactor():  # 1 unused token after
 
         R_True = makeList(nextQuad())
 
-        genQuad(rel_op, E1, E2)
+        genQuad(rel_op, E1, E2, '_')
 
         R_False = makeList(nextQuad())
 
-        genQuad("jump") # op = jump
+        genQuad("jump", '_', '_', '_') # op = jump
 
     return (R_True, R_False)
 
@@ -1099,8 +1099,8 @@ def factor():
 
         if is_subprogram:
             returned_value = newTemp()
-            genQuad("par", returned_value, "ret")
-            genQuad("call", returned_var_or_func)
+            genQuad("par", returned_value, "ret", '_')
+            genQuad("call", returned_var_or_func, '_', '_')
             return returned_value
 
 
