@@ -208,7 +208,7 @@ def create_c_file():
                 c_file.write(label_str + 'scanf("%i", &'+ q.oprnd1 + ')' + c_line_end)
 
             elif q.op == "out":
-                print_str = repr('printf("%i \n", ')
+                print_str = "printf(\"%i" + " \\" + 'n' + "\", "
                 c_file.write(label_str + print_str + q.oprnd1 + ')' + c_line_end)
 
 
