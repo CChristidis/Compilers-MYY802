@@ -6,7 +6,7 @@ Cimple resembles C syntactically.
 
 Cimple's program extension is **.ci** .
 
-Cimple only supports integers as data types and call-by-value and call-by-reference evaluation strategies.
+Cimple only supports **integers** as data types and **call-by-value (in)** and **call-by-reference (inout)** evaluation strategies.
  
 # Cimple's syntax grammar:
 
