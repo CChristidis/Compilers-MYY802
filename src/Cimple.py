@@ -132,21 +132,25 @@ class ExceptionHandler(object):
     def __exit__(self, etype, value, traceback):
         error = self.value.__exit__(etype, value, traceback)
         if etype == self.Break:
-            print('Nested supbrogram found. Aborting c file creation.')
+            print('Nested supbrogram or subrpogram call found. Aborting c file creation.')
             return True
         return error
 
 
 
 
-def declared_vars_to_c(declared_vars_list: list):
-    declared_vars_list_to_c = [el + ", " if idx < len(declared_vars_list) - 1 else el + ";" for idx, el in enumerate(declared_vars_list)]
-    declared_vars_list_to_c.insert(0, "int ")
+def declared_vars_to_c(declared_vars_list: list) -> str:
+    declared_vars_list_to_c = [el + ", " for el in declared_vars_list]
+    temp_vars_list = ["T_" + str(i) + ", " if i < temp_var_num - 1 else "T_" + str(i) + ";" for i in range(1, temp_var_num)]
+    merged_vars_list = mergeList(declared_vars_list_to_c, temp_vars_list)
+    merged_vars_list.insert(0, "int ")
 
-    return "".join(declared_vars_list_to_c)
+    return "".join(merged_vars_list)
 
 def create_c_file():
     has_nests = False
+    math_ops = ('+', '-', '*', '/')
+
 
     with ExceptionHandler(open('test.c', 'w', encoding='utf-8')) as c_file:
         c_file.write("# include <stdio.h> \n \n")
@@ -154,16 +158,32 @@ def create_c_file():
 
 
         for q, q_label in all_quads.items():
+            q_label = str(q_label)
+            label_str = "\t L" + q_label + ": "
+
             if q.op == "begin_block" and q.oprnd1 == program_name:
                 c_file.write("\t" + declared_vars_to_c(declared_vars) + "\n")
                 continue
-                
-            elif q.op == "begin_block" and q.oprnd1 != program_name:
+
+            elif q.op == "begin_block" and q.oprnd1 != program_name or q.op == "call":
                 has_nests = True
                 raise ExceptionHandler.Break
 
+            elif q.op == "halt":
+                c_file.write(label_str + "{}" + "\n")
 
-        c_file.write("}")
+            elif q.op == "end_block":
+                c_file.write("}")
+                break
+
+            elif q.op in math_ops:
+                c_file.write(label_str + q.target + " = " + str(q.oprnd1) + " " + q.op + " " + str(q.oprnd2) + "; \n" )
+
+
+
+
+
+
 
     if has_nests:
         os.remove("test.c")
