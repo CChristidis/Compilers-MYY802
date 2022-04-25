@@ -161,10 +161,11 @@ def create_c_file():
 
         for q, q_label in all_quads.items():
             q_label = str(q_label)
-            label_str = "\t L" + q_label + ": "
+            label_str = "\t L_" + q_label + ": "
 
             if q.op == "begin_block" and q.oprnd1 == program_name:
                 c_file.write("\t" + declared_vars_to_c(declared_vars) + "\n")
+                c_file.write(label_str + "\n")
                 continue
 
             elif q.op == "begin_block" and q.oprnd1 != program_name or q.op == "call":
@@ -197,6 +198,18 @@ def create_c_file():
                 c_file.write(label_str + if_str_start + q.oprnd1 + " " + q.op + " " + q.oprnd2 + if_str_end + "L_" +
                              str(q.target) + c_line_end)
 
+            elif q.op == "jump":
+                c_file.write(label_str + "goto " + "L_" + str(q.target) + c_line_end)
+
+            elif q.op == "ret":
+                c_file.write(label_str + "return " + str(q.oprnd1) + c_line_end)
+
+            elif q.op == "in":
+                c_file.write(label_str + 'scanf("%i", &'+ q.oprnd1 + ')' + c_line_end)
+
+            elif q.op == "out":
+                print_str = repr('printf("%i \n", ')
+                c_file.write(label_str + print_str + q.oprnd1 + ')' + c_line_end)
 
 
 
