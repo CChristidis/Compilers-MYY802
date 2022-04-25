@@ -1,0 +1,21 @@
+program some_additions {
+
+     # declarations #
+
+     declare i, x, y;
+
+     input(x);	# 5 #
+     input(y);  # 6 #
+
+     while (i<>x)
+     {
+         y := x + y;
+         i := i + 1;
+	 print(i);
+	 print(x);
+     };
+
+     print(y); # should be 31 #
+     print(i); # should be 5  #
+
+}.
