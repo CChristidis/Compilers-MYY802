@@ -11,8 +11,6 @@ program someAdditions {
      {
          y := x + y;
          i := i + 1;
-	 print(i);
-	 print(x);
      };
 
      print(y); # should be 31 #
