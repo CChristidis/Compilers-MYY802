@@ -4,7 +4,7 @@ Project for undergraduate compulsory course "Compliers-MYY802".
 The goal of this project is to create a compiler for the minimal programming lanuage "Cimple".
 Cimple resembles C syntactically. 
 
-Cimple's grammar is created by my professor, George Manis.
+Cimple's grammar is created by Compilers-MYY802's professor, George Manis.
  
 # Cimple's syntax grammar:
 
