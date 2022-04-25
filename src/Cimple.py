@@ -150,7 +150,9 @@ def declared_vars_to_c(declared_vars_list: list) -> str:
 def create_c_file():
     has_nests = False
     math_ops = ('+', '-', '*', '/')
-
+    c_line_end = "; \n"
+    if_str_start = "if ("
+    if_str_end = ") goto "
 
     with ExceptionHandler(open('test.c', 'w', encoding='utf-8')) as c_file:
         c_file.write("# include <stdio.h> \n \n")
@@ -177,7 +179,23 @@ def create_c_file():
                 break
 
             elif q.op in math_ops:
-                c_file.write(label_str + q.target + " = " + str(q.oprnd1) + " " + q.op + " " + str(q.oprnd2) + "; \n" )
+                c_file.write(label_str + q.target + " = " + str(q.oprnd1) + " " + q.op + " " + str(q.oprnd2) +
+                             c_line_end)
+
+            elif q.op == ":=":
+                c_file.write(label_str + q.target + " = " + str(q.oprnd1) + c_line_end)
+
+            elif q.op == "=":
+                c_file.write(label_str + if_str_start + q.oprnd1 + " == " + q.oprnd2 + if_str_end + "L_" +
+                             str(q.target) + c_line_end)
+
+            elif q.op == "<>":
+                c_file.write(label_str + if_str_start + q.oprnd1 + " != " + q.oprnd2 + if_str_end + "L_" +
+                             str(q.target) + c_line_end)
+
+            elif q.op in (">=", "<=", ">", "<"):
+                c_file.write(label_str + if_str_start + q.oprnd1 + " " + q.op + " " + q.oprnd2 + if_str_end + "L_" +
+                             str(q.target) + c_line_end)
 
 
 
