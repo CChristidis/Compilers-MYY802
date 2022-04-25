@@ -77,8 +77,6 @@ def genQuad(op, oprnd1='_', oprnd2='_', target='_'):
     label += 1
 
 
-
-
 def emptyList():
     return []
 
@@ -117,7 +115,6 @@ class Quad():
 ####################### FILE CREATOR FUNCTIONS (start) #######################
 
 
-
 class ExceptionHandler(object):
     class Break(Exception):
       """Break out of the with statement"""
@@ -149,6 +146,7 @@ def declared_vars_to_c(declared_vars_list: list) -> str:
 
 def create_c_file():
     has_nests = False
+
     math_ops = ('+', '-', '*', '/')
     c_line_end = "; \n"
     if_str_start = "if ("
@@ -211,11 +209,6 @@ def create_c_file():
                 print_str = "printf(\"%i" + " \\" + 'n' + "\", "
                 c_file.write(label_str + print_str + q.oprnd1 + ')' + c_line_end)
 
-
-
-
-
-
     if has_nests:
         os.remove("test.c")
 
@@ -226,14 +219,6 @@ def create_int_file():
             int_code_file.write(str(q_label) + ": " + str(q) + '\n')
 
 ####################### FILE CREATOR FUNCTIONS (end) #######################
-
-
-
-
-
-
-
-
 
 
 class LexAutomaton:
@@ -803,8 +788,6 @@ def elsepart():  # 1 unused token
         statements()
 
 
-
-
 def switch_in_for_caseStat(selection_control: str):
     global token
 
@@ -875,14 +858,6 @@ def switch_in_for_caseStat(selection_control: str):
 
         if selection_control == "switchcase":
             backpatch(exitList, nextQuad())
-
-
-
-
-
-
-
-
 
 ######################## LOGICAL OPERATIONS (start) ########################
 
