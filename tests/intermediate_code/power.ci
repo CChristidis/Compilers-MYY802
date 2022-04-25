@@ -1,0 +1,18 @@
+program power {
+
+    declare x;
+    declare y;
+    
+    input(x); # 5 #
+    input(y); # 2 #
+
+    while(y>0)
+    {
+        x := x * x;
+        y := y - 1;
+	
+    };
+
+    print(x); # should be 625 #
+    print(y); # should be 0   #
+}.
