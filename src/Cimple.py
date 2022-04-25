@@ -135,17 +135,22 @@ class ExceptionHandler(object):
         return error
 
 
+def declared_vars_to_c(declared_vars_list: list):
+    declared_vars_list_to_c = [el + ", " if idx < len(declared_vars_list) - 1 else el + ";" for idx, el in enumerate(declared_vars_list)]
+    declared_vars_list_to_c.insert(0, "int ")
+
+    return "".join(declared_vars_list_to_c)
 
 def create_c_file():
     with ExceptionHandler(open('test.c', 'w', encoding='utf-8')) as c_file:
         c_file.write("# include <stdio.h> \n \n")
-        c_file.write("int main(void) { \n")
+        c_file.write("int main(int argc, char **argv) { \n")
+        # add main subrpogram's declarations
+        c_file.write("\t" + declared_vars_to_c(declared_vars) + "\n")
 
 
 
-        raise ExceptionHandler.Break
-
-
+        #raise ExceptionHandler.Break
 
         c_file.write("}")
     #os.remove("test.c")
@@ -388,7 +393,7 @@ def declarations(subprogramID: str):
         if subprogramID == program_name:
             declared_vars.append(token)
 
-      
+
 
         varlist(subprogramID)
 
@@ -409,11 +414,11 @@ def varlist(subprogramID: str):
 
     while token != ';':  # can leave only and only if token == ';'
         token = lexical()  # variable's id
-        
+
         if subprogramID == program_name:
             declared_vars.append(token)
-     
-        
+
+
         if not acceptable_varname(token):
             printerror_parser("variable's identifier must be an alphanumeric sequence, "
                               "mandatorily starting with a letter.", "varlist", linenum)
@@ -1092,7 +1097,7 @@ def main():
     parser()
     create_int_file()
     create_c_file()
-    print(declared_vars)
+
 
 if __name__ == "__main__":
     main()
