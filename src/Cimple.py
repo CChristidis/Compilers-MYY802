@@ -16,6 +16,25 @@ temp_var_num = 1  # temporary variable counter.
 all_quads = {}
 main_program_declared_vars = []
 
+##### testing #####
+
+
+""" activation record layout (numbered in indices): """
+# 0-th index: subprogram's return address. Size: 4 bytes
+# 1-st index: access link (It refers to information stored in other activation records that is non-local.). Size: 4 bytes
+# 2-nd index: function's return value or None if subrpogram is a procedure. Size: 4 bytes
+# 3-rd index: function's parameter. Size: 4 bytes
+# ..........: function's parameter. Size: 4 bytes
+# .
+# .
+# (4 + n)-th index: function's local variable. Size: 4 bytes
+# ..........: function's local variable. Size: 4 bytes
+# .
+# .
+# (4 + n + k)-th index: function's temporary variable. Size: 4 bytes
+# ..........: function's temporary variable. Size: 4 bytes
+# .
+# .
 
 def openfile(path: str):
     global fd
@@ -227,60 +246,67 @@ def create_int_file():
 ####################### SYMBOL TABLE FUNCTIONS AND CLASSES (start) #######################
 
 
-# every instantiation of this class is created and inserted into the symbol table at the start
-# the corresponding subprogram. Νevertheless, it's fields are evaluated when they are created inside
+# Every instantiation of this class is created and inserted into the symbol table at the start
+# the corresponding subprogram. Νevertheless, its fields are evaluated when they are created inside
 # inside the code.
+
 
 class Entity:
     def __init__(self, name: str):
         self.name = name
 
 
-
-    class Variable(Entity):
-        def __init__(self, name: str, datatype, offset: int):
-            super().__init__(name)                      # variable's ID
-            self.datatype = datatype                    # variable's data type
-            self.offset = offset                        # distance from stack's head
-
-        class TemporaryVariable(Variable):
-            def __init__(self, name: str, datatype, offset: int):
-                super().__init__(name, datatype, offset)
+class Variable(Entity):
+    def __init__(self, name: str, datatype, offset: int):
+        super().__init__(name)                      # variable's ID
+        self.datatype = datatype                    # variable's data type
+        self.offset = offset                        # distance from stack's head
 
 
+class TemporaryVariable(Variable):
+    def __init__(self, name: str, datatype, offset: int):
+        super().__init__(name, datatype, offset)
 
-    class Subprogram(Entity):
+
+
+class Subprogram(Entity):
+    def __init__(self, name: str, startingQuad, formalParameters: list, framelength: int):
+        super().__init__(name)                      # subprogram's ID
+        self.startingQuad = startingQuad            # subprogram's first quad
+        self.formalParameters = formalParameters    # list containing a subprogram's formal parameters
+        self.framelength = framelength              # activation record's length in bytes
+
+
+class Procedure(Subprogram):
         def __init__(self, name: str, startingQuad, formalParameters: list, framelength: int):
-            super().__init__(name)                      # subprogram's ID
-            self.startingQuad = startingQuad            # subprogram's first quad
-            self.formalParameters = formalParameters    # list containing a subprogram's formal parameters
-            self.framelength = framelength              # activation record's length in bytes
+            super().__init__(name, startingQuad, formalParameters, framelength)
 
-        class Procedure(Subprogram):
-            def __init__(self, name: str, startingQuad, formalParameters: list, framelength: int):
-                super().__init__(name, startingQuad, formalParameters, framelength)
 
-        class Function(Subprogram):
-            def __init__(self, name: str, startingQuad, datatype, formalParameters: list, framelength: int):
-                super().__init__(name, startingQuad, formalParameters, framelength)
-                self.datatype = datatype
-
-    class FormalParameter(Entity):
-        def __init__(self, name: str, datatype, mode: str):
-            super().__init__(name)
+class Function(Subprogram):
+        def __init__(self, name: str, startingQuad, datatype, formalParameters: list, framelength: int):
+            super().__init__(name, startingQuad, formalParameters, framelength)
             self.datatype = datatype
-            self.mode = mode
 
-            class Parameter(FormalParameter):
-                def __init__(self, name: str, datatype, mode: str, offset: int):
-                    super().__init__(name, datatype, mode)  # parameter's ID
-                    self.offset = offset
 
-    class SymbolicConstant(Entity):
-        def __init__(self, name: str, datatype, value):
-            super().__init__(name)
-            self.datatype = datatype
-            self.value = value
+class FormalParameter(Entity):
+    def __init__(self, name: str, datatype, mode: str):
+        super().__init__(name)
+        self.datatype = datatype
+        self.mode = mode
+
+
+class Parameter(FormalParameter):
+        def __init__(self, name: str, datatype, mode: str, offset: int):
+            super().__init__(name, datatype, mode)  # parameter's ID
+            self.offset = offset
+
+
+class SymbolicConstant(Entity):
+    def __init__(self, name: str, datatype, value):
+        super().__init__(name)
+        self.datatype = datatype
+        self.value = value
+
 
 
 
@@ -555,9 +581,22 @@ def subprogram():
     global token
 
     while token in ("function", "procedure"):
+
+        # subprogram_type = token     # function or procedure?
+
         token = lexical()  # subprogram's ID  (e.g. isPrime)
 
         subprogramID = token
+
+        #################################### TESTING SYMBOL TABLE ####################################
+
+
+        #if subprogram_type == "function":
+            #func = Function()
+
+
+
+        #################################### TESTING SYMBOL TABLE ####################################
 
         if not acceptable_varname(token):
             printerror_parser("subprogram's identifier must be an alphanumeric sequence, "
