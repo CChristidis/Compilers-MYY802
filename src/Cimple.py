@@ -335,6 +335,16 @@ def removeCurrentLevel():
 
     symbol_table.pop(-1)
 
+def upgradeField(field_value):
+    # field_value is either framlength (int) or Quad object (Quad)
+    global symbol_table
+
+    pass
+    # if isinstance(field_value, int):
+
+    # if isinstance(field_value, Quad):
+
+
 
 
 
