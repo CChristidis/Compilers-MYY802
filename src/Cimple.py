@@ -14,7 +14,7 @@ fd = ''
 label = 1
 temp_var_num = 1  # temporary variable counter.
 all_quads = {}
-declared_vars = []
+main_program_declared_vars = []
 
 
 def openfile(path: str):
@@ -162,7 +162,7 @@ def create_c_file():
             label_str = "\t L_" + q_label + ": "
 
             if q.op == "begin_block" and q.oprnd1 == program_name:
-                c_file.write("\t" + declared_vars_to_c(declared_vars) + "\n")
+                c_file.write("\t" + declared_vars_to_c(main_program_declared_vars) + "\n")
                 c_file.write(label_str + "\n")
                 continue
 
@@ -434,13 +434,13 @@ def block(subprogramID:str):
 
 def declarations(subprogramID: str):
     """ we can opt not to declare any variable whatsoever. """
-    global token, declared_vars
+    global token, main_program_declared_vars
 
     while token == "declare":  # Kleene star implementation for "declare" non-terminal
         token = lexical()   # always a variable
 
         if subprogramID == program_name:
-            declared_vars.append(token)
+            main_program_declared_vars.append(token)
 
 
 
@@ -451,7 +451,7 @@ def declarations(subprogramID: str):
 
 
 def varlist(subprogramID: str):
-    global token, declared_vars
+    global token, main_program_declared_vars
 
     if not acceptable_varname(token):
         printerror_parser("variable's identifier must be an alphanumerical sequence, "
@@ -465,7 +465,7 @@ def varlist(subprogramID: str):
         token = lexical()  # variable's id
 
         if subprogramID == program_name:
-            declared_vars.append(token)
+            main_program_declared_vars.append(token)
 
 
         if not acceptable_varname(token):
