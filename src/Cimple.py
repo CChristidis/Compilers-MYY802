@@ -51,6 +51,8 @@ def acceptable_varname(tk: str) -> bool:
     return tk[0].isalpha() and tk.isalnum()
 
 
+####################### INTERMEDIATE CODE FUNCTIONS AND CLASSES(start) #######################
+
 # temporary variables are used for: 1) storing subprogram's return value
 #                                   2) intermediary result storage
 def newTemp():
@@ -111,8 +113,10 @@ class Quad():
     def __str__(self):
         return (str(self.op) + ", " + str(self.oprnd1) + ", " + str(self.oprnd2) + ", " + str(self.target))
 
+####################### INTERMEDIATE CODE FUNCTIONS AND CLASSES (end) #######################
 
-####################### FILE CREATOR FUNCTIONS (start) #######################
+
+####################### FILE CREATOR FUNCTIONS AND CLASSES (start) #######################
 
 
 class ExceptionHandler(object):
@@ -218,8 +222,75 @@ def create_int_file():
         for q, q_label in all_quads.items():
             int_code_file.write(str(q_label) + ": " + str(q) + '\n')
 
-####################### FILE CREATOR FUNCTIONS (end) #######################
+####################### FILE CREATOR FUNCTIONS AND CLASSES (end) #######################
 
+####################### SYMBOL TABLE FUNCTIONS AND CLASSES (start) #######################
+
+
+class Entity:
+    def __init__(self, name: str):
+        self.name = name
+
+
+
+    class Variable(Entity):
+        def __init__(self, name: str, datatype, offset: int):
+            super().__init__(name)      # variable's ID
+            self.datatype = datatype    # variable's data type
+            self.offset = offset        # distance from stack's head
+
+    class Parameter(Entity):
+        def __init__(self, name: str, datatype, mode, offset: int):
+            super().__init__(name)  # parameter's ID
+            self.datatype = datatype  # parameter's data type
+            self.mode = mode
+            self.offset = offset  # distance from stack's head
+
+    class Subprogram(Entity):
+        def __init__(self, name: str, startingQuad, formalParameters: list, framelength: int):
+            super().__init__(name)                      # subprogram's ID
+            self.startingQuad = startingQuad            # subprogram's first quad
+            self.formalParameters = formalParameters    # list containing a subprogram's formal parameters
+            self.framelength = framelength              # activity table's length in bytes
+
+        class Procedure(Subprogram):
+            def __init__(self, name: str, startingQuad, formalParameters: list, framelength: int):
+                super().__init__(name, startingQuad, formalParameters, framelength)
+
+        class Function(Subprogram):
+            def __init__(self, name: str, startingQuad, datatype, formalParameters: list, framelength: int):
+                super().__init__(name, startingQuad, formalParameters, framelength)
+                self.datatype = datatype
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+####################### SYMBOL TABLE FUNCTIONS AND CLASSES (end) #######################
 
 class LexAutomaton:
     def __init__(self, fd):
