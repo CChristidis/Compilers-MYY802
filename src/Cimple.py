@@ -316,13 +316,27 @@ class SymbolicConstant(Entity):
 
 
 
-def addRecord(record):
+def addRecordToCurrentLevel(record):
     global symbol_table
-
 
     symbol_table[-1].append(record)
 
-    # symbol_table.pop(-1)
+
+
+def addNewLevel():
+    # invoked at the START of main program or a subprogram
+    global symbol_table
+
+    symbol_table.append([])
+
+def removeCurrentLevel():
+    # invoked at the END of main program or a subprogram
+    global symbol_table
+
+    symbol_table.pop(-1)
+
+
+
 
 
 
