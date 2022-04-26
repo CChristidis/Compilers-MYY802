@@ -27,14 +27,16 @@ main_program_declared_vars = []
 # ..........: function's parameter. Size: 4 bytes
 # .
 # .
-# (4 + n)-th index: function's local variable. Size: 4 bytes
+# (4 + n - 1)-th index: function's local variable. Size: 4 bytes
 # ..........: function's local variable. Size: 4 bytes
 # .
 # .
-# (4 + n + k)-th index: function's temporary variable. Size: 4 bytes
+# (4 + n - 1 + k - 1)-th index: function's temporary variable. Size: 4 bytes
 # ..........: function's temporary variable. Size: 4 bytes
 # .
 # .
+# Activation record's length = (4 + 4 + 4) + 4 * (n + k + m) = 12 +  4 * (n + k + m) bytes
+# First function's parameter can possibly start at offset 12.
 
 def openfile(path: str):
     global fd
