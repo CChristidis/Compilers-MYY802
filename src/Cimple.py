@@ -264,7 +264,7 @@ class Variable(Entity):
     def __init__(self, name: str, datatype, offset: int):
         super().__init__(name)                      # variable's ID
         self.datatype = datatype                    # variable's data type
-        self.offset = offset                        # distance from stack's head
+        self.offset = offset                        # distance from stack's head = 4 * len
 
 
 class TemporaryVariable(Variable):
@@ -335,7 +335,7 @@ def removeCurrentLevel():
 
     symbol_table.pop(-1)
 
-def upgradeField(field_value):
+def updateField(field_value):
     # field_value is either framlength (int) or Quad object (Quad)
     global symbol_table
 
