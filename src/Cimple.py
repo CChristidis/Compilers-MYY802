@@ -385,7 +385,7 @@ def program():
         print("Program '" + program_name + "' has started.")
 
         if not acceptable_varname(token):
-            printerror_parser("program's name must be an alphanumeric sequence, mandatorily starting with a letter.",
+            printerror_parser("program's name must be an alphanumerical sequence, mandatorily starting with a letter.",
                               "program", linenum)
         token = lexical()
 
@@ -454,7 +454,7 @@ def varlist(subprogramID: str):
     global token, declared_vars
 
     if not acceptable_varname(token):
-        printerror_parser("variable's identifier must be an alphanumeric sequence, "
+        printerror_parser("variable's identifier must be an alphanumerical sequence, "
                           "mandatorily starting with a letter.", "varlist", linenum)
 
     token = lexical()  # comma or semicolon
@@ -469,7 +469,7 @@ def varlist(subprogramID: str):
 
 
         if not acceptable_varname(token):
-            printerror_parser("variable's identifier must be an alphanumeric sequence, "
+            printerror_parser("variable's identifier must be an alphanumerical sequence, "
                               "mandatorily starting with a letter.", "varlist", linenum)
         token = lexical()
 
@@ -551,7 +551,7 @@ def actualparitem():
         parameterID = token
 
         if not acceptable_varname(token):
-            printerror_parser("parameter's identifier must be an alphanumeric sequence, "
+            printerror_parser("parameter's identifier must be an alphanumerical sequence, "
                               "mandatorily starting with a letter.", "actualparitem", linenum)
 
         genQuad("par", parameterID, "ref", '_')
@@ -568,7 +568,7 @@ def formalparitem():
     token = lexical()  # parameter's ID
 
     if not acceptable_varname(token):
-        printerror_parser("parameter's identifier must be an alphanumeric sequence, "
+        printerror_parser("parameter's identifier must be an alphanumerical sequence, "
                           "mandatorily starting with a letter.", "formalparitem", linenum)
 
     token = lexical()  # comma or closing parenthesis
@@ -647,7 +647,7 @@ def statement():
         target_id = token
 
         if not acceptable_varname(token):
-            printerror_parser("parameter's identifier must be an alphanumeric sequence, "
+            printerror_parser("parameter's identifier must be an alphanumerical sequence, "
                               "mandatorily starting with a letter.", "statement", linenum)
         token = lexical()  # :=
 
@@ -678,7 +678,7 @@ def inputStat():
     genQuad("in", inputID, '_', '_')
 
     if not acceptable_varname(token):
-        printerror_parser("variable's identifier must be an alphanumeric sequence, "
+        printerror_parser("variable's identifier must be an alphanumerical sequence, "
                           "mandatorily starting with a letter.", "inputStat", linenum)
 
     token = lexical()  # )
@@ -696,7 +696,7 @@ def callStat():
     called_subprogram = token
 
     if not acceptable_varname(token):
-        printerror_parser("subprogram's identifier must be an alphanumeric sequence, "
+        printerror_parser("subprogram's identifier must be an alphanumerical sequence, "
                           "mandatorily starting with a letter.", "callStat", linenum)
 
     token = lexical()  # (
@@ -1088,7 +1088,7 @@ def factor():
 
     else:  # variable or subprogram case
         if not acceptable_varname(token):
-            printerror_parser("parameter's or subprogram's identifier must be an alphanumeric sequence, "
+            printerror_parser("parameter's or subprogram's identifier must be an alphanumerical sequence, "
                               "mandatorily starting with a letter.", "factor", linenum)
 
         returned_var_or_func = token
