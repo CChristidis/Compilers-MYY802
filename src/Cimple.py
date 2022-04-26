@@ -18,6 +18,8 @@ main_program_declared_vars = []
 
 ##### testing #####
 
+symbol_table = []
+
 
 """ activation record layout (numbered in indices): """
 # 0-th index: subprogram's return address. Size: 4 bytes
@@ -248,9 +250,9 @@ def create_int_file():
 ####################### SYMBOL TABLE FUNCTIONS AND CLASSES (start) #######################
 
 
-# Every instantiation of this class is created and inserted into the symbol table at the start
+# Every instantiation of this class is created and inserted into the symbol table at the start of
 # the corresponding subprogram. Νevertheless, its fields are evaluated when they are created inside
-# inside the code.
+# the code.
 
 
 class Entity:
@@ -310,6 +312,17 @@ class SymbolicConstant(Entity):
         self.value = value
 
 
+
+
+
+
+def addRecord(record):
+    global symbol_table
+
+
+    symbol_table[-1].append(record)
+
+    # symbol_table.pop(-1)
 
 
 
@@ -1249,4 +1262,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
