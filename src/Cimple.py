@@ -227,6 +227,10 @@ def create_int_file():
 ####################### SYMBOL TABLE FUNCTIONS AND CLASSES (start) #######################
 
 
+# every instantiation of this class is created and inserted into the symbol table at the start
+# the corresponding subprogram. Νevertheless, it's fields are evaluated when they are created inside
+# inside the code.
+
 class Entity:
     def __init__(self, name: str):
         self.name = name
@@ -235,23 +239,22 @@ class Entity:
 
     class Variable(Entity):
         def __init__(self, name: str, datatype, offset: int):
-            super().__init__(name)      # variable's ID
-            self.datatype = datatype    # variable's data type
-            self.offset = offset        # distance from stack's head
+            super().__init__(name)                      # variable's ID
+            self.datatype = datatype                    # variable's data type
+            self.offset = offset                        # distance from stack's head
 
-    class Parameter(Entity):
-        def __init__(self, name: str, datatype, mode, offset: int):
-            super().__init__(name)  # parameter's ID
-            self.datatype = datatype  # parameter's data type
-            self.mode = mode
-            self.offset = offset  # distance from stack's head
+        class TemporaryVariable(Variable):
+            def __init__(self, name: str, datatype, offset: int):
+                super().__init__(name, datatype, offset)
+
+
 
     class Subprogram(Entity):
         def __init__(self, name: str, startingQuad, formalParameters: list, framelength: int):
             super().__init__(name)                      # subprogram's ID
             self.startingQuad = startingQuad            # subprogram's first quad
             self.formalParameters = formalParameters    # list containing a subprogram's formal parameters
-            self.framelength = framelength              # activity table's length in bytes
+            self.framelength = framelength              # activation record's length in bytes
 
         class Procedure(Subprogram):
             def __init__(self, name: str, startingQuad, formalParameters: list, framelength: int):
@@ -262,28 +265,22 @@ class Entity:
                 super().__init__(name, startingQuad, formalParameters, framelength)
                 self.datatype = datatype
 
+    class FormalParameter(Entity):
+        def __init__(self, name: str, datatype, mode: str):
+            super().__init__(name)
+            self.datatype = datatype
+            self.mode = mode
 
+            class Parameter(FormalParameter):
+                def __init__(self, name: str, datatype, mode: str, offset: int):
+                    super().__init__(name, datatype, mode)  # parameter's ID
+                    self.offset = offset
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    class SymbolicConstant(Entity):
+        def __init__(self, name: str, datatype, value):
+            super().__init__(name)
+            self.datatype = datatype
+            self.value = value
 
 
 
