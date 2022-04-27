@@ -19,7 +19,7 @@ main_program_declared_vars = []
 ##### testing #####
 
 symbol_table = []
-
+offset = 12
 
 """ activation record layout (numbered in indices): """
 # 0-th index: subprogram's return address. Size: 4 bytes
@@ -584,14 +584,18 @@ def block(subprogramID:str):
 
 def declarations(subprogramID: str):
     """ we can opt not to declare any variable whatsoever. """
-    global token, main_program_declared_vars
+    global token, main_program_declared_vars, offset
 
     while token == "declare":  # Kleene star implementation for "declare" non-terminal
         token = lexical()   # always a variable
 
+        declared_varID = token
+
         if subprogramID == program_name:
             main_program_declared_vars.append(token)
 
+        declared_var = Variable(declared_varID, "int", offset)
+        offset += 4
 
 
         varlist(subprogramID)
@@ -1299,7 +1303,11 @@ def main():
     parser()
     create_int_file()
     create_c_file()
-
+    for i in range(len(symbol_table)):
+        for j in symbol_table[i]:
+            print("Level " + str(i) + ": " + str(j))
+            for formal in j.formalParameters:
+                print(formal)
 
 if __name__ == "__main__":
     main()
