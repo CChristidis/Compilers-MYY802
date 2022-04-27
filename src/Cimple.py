@@ -285,11 +285,18 @@ class Procedure(Subprogram):
         def __init__(self, name: str, startingQuad, formalParameters: list, framelength: int):
             super().__init__(name, startingQuad, formalParameters, framelength)
 
+        def __str__(self):
+            return (str(self.name) + ", " + str(self.startingQuad) + ", " + str(self.formalParameters) + ", " + str(
+                self.framelength))
 
 class Function(Subprogram):
         def __init__(self, name: str, startingQuad, datatype, formalParameters: list, framelength: int):
             super().__init__(name, startingQuad, formalParameters, framelength)
             self.datatype = datatype
+
+        def __str__(self):
+            return (str(self.name) + ", " + str(self.startingQuad) + ", " + str(self.datatype) + ", " +
+                    str(self.formalParameters) + ", " + str(self.framelength))
 
 
 class FormalParameter(Entity):
@@ -329,26 +336,36 @@ def addNewLevel():
 
     symbol_table.append([])
 
+
 def removeCurrentLevel():
     # invoked at the END of main program or a subprogram
     global symbol_table
 
     symbol_table.pop(-1)
 
+
 def updateField(field_value):
     # field_value is either framlength (int) or Quad object (Quad)
     global symbol_table
 
-    pass
-    # if isinstance(field_value, int):
-
-    # if isinstance(field_value, Quad):
+    if isinstance(field_value, int):
+        symbol_table[-1][-1].framelength = field_value
 
 
+    elif isinstance(field_value, Quad):
+        symbol_table[-1][-1].startingQuad = field_value
 
 
+def addFormalParameter(formal_parameter):
+    global symbol_table
+
+    symbol_table[-1][-1].formalParameters.append(formal_parameter)
 
 
+def getRecord(recordName: str):
+    record = [record for level in symbol_table for record in level if record.name == recordName][0]
+
+    return record
 
 
 
