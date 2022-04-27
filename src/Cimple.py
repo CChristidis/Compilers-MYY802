@@ -18,7 +18,7 @@ main_program_declared_vars = []
 
 ##### testing #####
 
-symbol_table = []
+symbol_table = [[]]
 offset = 12
 
 """ activation record layout (numbered in indices): """
@@ -266,6 +266,8 @@ class Variable(Entity):
         self.datatype = datatype                    # variable's data type
         self.offset = offset                        # distance from stack's head = 4 * len
 
+    def __str__(self):
+        return (str(self.name) + ", " + str(self.datatype) + ", " + str(self.offset))
 
 class TemporaryVariable(Variable):
     def __init__(self, name: str, datatype, offset: int):
@@ -594,9 +596,11 @@ def declarations(subprogramID: str):
         if subprogramID == program_name:
             main_program_declared_vars.append(token)
 
+        ############################### SYMBOL TABLE ###############################
         declared_var = Variable(declared_varID, "int", offset)
+        addRecordToCurrentLevel(declared_var)
         offset += 4
-
+        ############################### SYMBOL TABLE ###############################
 
         varlist(subprogramID)
 
@@ -605,7 +609,7 @@ def declarations(subprogramID: str):
 
 
 def varlist(subprogramID: str):
-    global token, main_program_declared_vars
+    global token, main_program_declared_vars, offset
 
     if not acceptable_varname(token):
         printerror_parser("variable's identifier must be an alphanumerical sequence, "
@@ -617,6 +621,14 @@ def varlist(subprogramID: str):
 
     while token != ';':  # can leave only and only if token == ';'
         token = lexical()  # variable's id
+
+        declared_varID = token
+        
+        ############################### SYMBOL TABLE ###############################
+        declared_var = Variable(declared_varID, "int", offset)
+        addRecordToCurrentLevel(declared_var)
+        offset += 4
+        ############################### SYMBOL TABLE ###############################
 
         if subprogramID == program_name:
             main_program_declared_vars.append(token)
@@ -1306,8 +1318,9 @@ def main():
     for i in range(len(symbol_table)):
         for j in symbol_table[i]:
             print("Level " + str(i) + ": " + str(j))
-            for formal in j.formalParameters:
-                print(formal)
+            if isinstance(j, Subprogram):
+                for formal in j.formalParameters:
+                    print(formal)
 
 if __name__ == "__main__":
     main()
