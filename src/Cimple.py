@@ -286,8 +286,7 @@ class Procedure(Subprogram):
             super().__init__(name, startingQuad, formalParameters, framelength)
 
         def __str__(self):
-            return (str(self.name) + ", " + str(self.startingQuad) + ", " + str(self.formalParameters) + ", " + str(
-                self.framelength))
+            return (str(self.name) + ", " + str(self.startingQuad) + ", "  + str(self.framelength))
 
 class Function(Subprogram):
         def __init__(self, name: str, startingQuad, datatype, formalParameters: list, framelength: int):
@@ -295,8 +294,7 @@ class Function(Subprogram):
             self.datatype = datatype
 
         def __str__(self):
-            return (str(self.name) + ", " + str(self.startingQuad) + ", " + str(self.datatype) + ", " +
-                    str(self.formalParameters) + ", " + str(self.framelength))
+            return (str(self.name) + ", " + str(self.startingQuad) + ", " + str(self.datatype) + ", " + str(self.framelength))
 
 
 class FormalParameter(Entity):
@@ -304,6 +302,9 @@ class FormalParameter(Entity):
         super().__init__(name)
         self.datatype = datatype
         self.mode = mode
+
+    def __str__(self):
+        return (str(self.name) + ", " + str(self.datatype) + ", " + str(self.mode))
 
 
 class Parameter(FormalParameter):
@@ -349,7 +350,7 @@ def updateField(field_value):
     global symbol_table
 
     if isinstance(field_value, int):
-        symbol_table[-1][-1].framelength = field_value
+        symbol_table[-1][-1].framelength += field_value
 
 
     elif isinstance(field_value, Quad):
@@ -358,7 +359,7 @@ def updateField(field_value):
 
 def addFormalParameter(formal_parameter):
     global symbol_table
-
+   # print(symbol_table[-1])
     symbol_table[-1][-1].formalParameters.append(formal_parameter)
 
 
