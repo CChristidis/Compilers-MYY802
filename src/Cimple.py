@@ -363,8 +363,7 @@ def addFormalParameter(formal_parameter):
 
 
 def getRecord(recordName: str):
-    record = [record for level in symbol_table for record in level if record.name == recordName][0]
-
+    record = [record for level in reversed(symbol_table) for record in level if record.name == recordName][0]
     return record
 
 
