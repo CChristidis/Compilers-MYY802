@@ -6,7 +6,7 @@ program power {
     input(x); # 5 #
     input(y); # 2 #
 
-    while(y>0)
+    while (y > 0)
     {
         x := x * x;
         y := y - 1;
