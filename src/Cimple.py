@@ -225,15 +225,15 @@ def create_c_file():
                 c_file.write(label_str + q.target + " = " + str(q.oprnd1) + c_line_end)
 
             elif q.op == "=":
-                c_file.write(label_str + if_str_start + q.oprnd1 + " == " + q.oprnd2 + if_str_end + "L_" +
+                c_file.write(label_str + if_str_start + str(q.oprnd1) + " == " + str(q.oprnd2) + if_str_end + "L_" +
                              str(q.target) + c_line_end)
 
             elif q.op == "<>":
-                c_file.write(label_str + if_str_start + q.oprnd1 + " != " + q.oprnd2 + if_str_end + "L_" +
+                c_file.write(label_str + if_str_start + str(q.oprnd1) + " != " + str(q.oprnd2) + if_str_end + "L_" +
                              str(q.target) + c_line_end)
 
             elif q.op in (">=", "<=", ">", "<"):
-                c_file.write(label_str + if_str_start + q.oprnd1 + " " + q.op + " " + q.oprnd2 + if_str_end + "L_" +
+                c_file.write(label_str + if_str_start + str(q.oprnd1) + " " + q.op + " " + str(q.oprnd2) + if_str_end + "L_" +
                              str(q.target) + c_line_end)
 
             elif q.op == "jump":
@@ -243,11 +243,11 @@ def create_c_file():
                 c_file.write(label_str + "return " + str(q.oprnd1) + c_line_end)
 
             elif q.op == "in":
-                c_file.write(label_str + 'scanf("%i", &'+ q.oprnd1 + ')' + c_line_end)
+                c_file.write(label_str + 'scanf("%i", &'+ str(q.oprnd1) + ')' + c_line_end)
 
             elif q.op == "out":
                 print_str = "printf(\"%i" + " \\" + 'n' + "\", "
-                c_file.write(label_str + print_str + q.oprnd1 + ')' + c_line_end)
+                c_file.write(label_str + print_str + str(q.oprnd1) + ')' + c_line_end)
 
     if has_nests:
         os.remove("test.c")
@@ -257,6 +257,17 @@ def create_int_file():
     with open('test.int', 'w', encoding='utf-8') as int_code_file:
         for q, q_label in all_quads.items():
             int_code_file.write(str(q_label) + ": " + str(q) + '\n')
+
+def create_symb_file():
+    with open('test.symb', 'a', encoding='utf-8') as symb_file:
+        symb_file.write("Number of levels at the moment: {}".format(len(symbol_table)))
+        symb_file.write('\n' * 1)
+
+        for i in symbol_table:
+            for idx, el in enumerate(i.entity_list):
+                symb_file.write("Entity no. {}".format(str(idx + 1)) + " of Scope at level {}".format(str(i.level)) + ": [{}".format(str(el)) + "]")
+                symb_file.write('\n' * 1)
+            symb_file.write('\n' * 1)
 
 ####################### FILE CREATOR FUNCTIONS AND CLASSES (end) #######################
 
@@ -345,11 +356,7 @@ class Scope:
         self.entity_list = []
 
     def __str__(self):
-        for idx, el in enumerate(self.entity_list):
-            print("---------- Printing entity no. {}".format(str(idx + 1)) + " of Scope at level: {}".format(str(self.level)) + " ----------")
-            print(str(el))
-            print("----------------------------------------------------------------")
-            print(1 * '\n')
+
         return "Level: " + str(self.level) + ", " + str(self.offset)
 
 
@@ -396,11 +403,6 @@ def addFormalParameter(formal_parameter):
 
 def getRecord(recordName: str):
     entity = [entity for scope in reversed(symbol_table) for entity in scope.entity_list if entity.name == recordName][0]
-
-    if isinstance(entity, Variable) or isinstance(entity, FormalParameter):
-        print("######################### LEVEL ##################################")
-        print(entity)
-        print("##################################################################")
     return entity
 
 
@@ -616,8 +618,8 @@ def block(subprogramID:str):
             genQuad("halt", '_', '_', '_')
 
         genQuad('end_block', subprogramID, '_', '_')
-        for i in symbol_table:
-            print("[" + str(i) + "]")
+
+        create_symb_file()
         removeCurrentLevel()
         current_subprogram.pop(-1)
         if token != '}':
@@ -1414,6 +1416,8 @@ def get_extn(file: str) -> str:
 
 
 def main():
+    os.remove("test.symb")
+    
     input_file = sys.argv[1]
 
     # check if file has .ci extension. check_file function.
@@ -1424,8 +1428,6 @@ def main():
     parser()
     create_int_file()
     create_c_file()
-
-
 
 
 if __name__ == "__main__":
