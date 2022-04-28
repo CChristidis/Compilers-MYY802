@@ -12,7 +12,6 @@ program someAdditions {
      while (i <> x)
      {
          y := x + y;
-	 print(y);
          i := i + 1;
      };
 
