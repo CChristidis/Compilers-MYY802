@@ -1414,11 +1414,18 @@ def get_extn(file: str) -> str:
     idx = file.rindex('.')
     return file[idx:]
 
-
-def main():
+def clear_existing_files_from_dir():
     if os.path.exists("test.symb"):
         os.remove("test.symb")
 
+    if os.path.exists("test.c"):
+        os.remove("test.c")
+
+    if os.path.exists("test.int"):
+        os.remove("test.int")
+
+def main():
+    clear_existing_files_from_dir()
     input_file = sys.argv[1]
 
     # check if file has .ci extension. check_file function.
