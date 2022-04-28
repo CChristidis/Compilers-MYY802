@@ -7,10 +7,12 @@ program someAdditions {
      input(x);	# 5 #
      input(y);  # 6 #
 
-     while (i<>x)
+     i := 0;	# CSE UOI PCs' installed C doesn't support pre-initialized variables #
+
+     while (i <> x)
      {
          y := x + y;
-         print(y);
+	 print(y);
          i := i + 1;
      };
 
