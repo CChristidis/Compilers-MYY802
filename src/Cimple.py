@@ -19,7 +19,7 @@ main_program_declared_vars = []
 ##### testing #####
 
 symbol_table = []
-current_subprogram = ''
+current_subprogram = []
 """ activation record layout (numbered in indices): """
 # 0-th index: subprogram's return address. Size: 4 bytes
 # 1-st index: access link (It refers to information stored in other activation records that is non-local.). Size: 4 bytes
@@ -84,11 +84,12 @@ def newTemp():
     temp_var_num += 1
 
     if len(symbol_table) > 1 :
-        offset = getRecord(current_subprogram).framelength
+
+        offset = getRecord(current_subprogram[-1]).framelength
 
         declared_temp_var = TemporaryVariable(new_tempID, "int", offset)
         addRecordToCurrentLevel(declared_temp_var)
-        updateField(getRecord(current_subprogram), 4)
+        updateField(getRecord(current_subprogram[-1]), 4)
 
     else:
         offset = symbol_table[-1].offset
@@ -344,10 +345,10 @@ class Scope:
         self.entity_list = []
 
     def __str__(self):
-        for i in self.entity_list:
-            print("---------- Printing an entity of Scope at level: " + str(self.level) + " ----------")
-            print(str(i))
-            print("-------------------------------------------------")
+        for idx, el in enumerate(self.entity_list):
+            print("---------- Printing entity no. {}".format(str(idx + 1)) + " of Scope at level: {}".format(str(self.level)) + " ----------")
+            print(str(el))
+            print("----------------------------------------------------------------")
             print(1 * '\n')
         return "Level: " + str(self.level) + ", " + str(self.offset)
 
@@ -366,8 +367,8 @@ def addNewLevel():
     global symbol_table
 
     new_scope = Scope(len(symbol_table))
-    symbol_table.append(new_scope)
 
+    symbol_table.append(new_scope)
 
 def removeCurrentLevel():
     # invoked at the END of main program or a subprogram
@@ -390,23 +391,21 @@ def updateField(subprogram, field_value):
 
 def addFormalParameter(formal_parameter):
     global symbol_table
-   # print(symbol_table[-1])
     symbol_table[-1][-1].formalParameters.append(formal_parameter)
 
 
 def getRecord(recordName: str):
     entity = [entity for scope in reversed(symbol_table) for entity in scope.entity_list if entity.name == recordName][0]
-    # printLocals(entity)
+
+    if isinstance(entity, Variable) or isinstance(entity, FormalParameter):
+        print("######################### LEVEL ##################################")
+        print(entity)
+        print("##################################################################")
     return entity
 
 
-# For debugging purposes. Use this in getRecord function.
-def printLocals(entity):
-    level = [scope.level for scope in reversed(symbol_table) for entity in scope.entity_list if entity.name == recordName][0]
-    if isinstance(entity, Variable) or isinstance(entity, FormalParameter):
-        print("######################### LEVEL ##################################")
-        print(level, entity)
-        print("##################################################################")
+
+
 
 
 
@@ -595,7 +594,7 @@ def program():
 def block(subprogramID:str):
     global token, current_subprogram
 
-    current_subprogram = subprogramID
+    current_subprogram.append(subprogramID)
 
     if token == "{":
         token = lexical()
@@ -620,6 +619,7 @@ def block(subprogramID:str):
         for i in symbol_table:
             print("[" + str(i) + "]")
         removeCurrentLevel()
+        current_subprogram.pop(-1)
         if token != '}':
             printerror_parser("'}' expected, not found.", "block", linenum)
         """
