@@ -396,7 +396,19 @@ def addFormalParameter(formal_parameter):
 
 def getRecord(recordName: str):
     entity = [entity for scope in reversed(symbol_table) for entity in scope.entity_list if entity.name == recordName][0]
+    # printLocals(entity)
     return entity
+
+
+# For debugging purposes. Use this in getRecord function.
+def printLocals(entity):
+    level = [scope.level for scope in reversed(symbol_table) for entity in scope.entity_list if entity.name == recordName][0]
+    if isinstance(entity, Variable) or isinstance(entity, FormalParameter):
+        print("######################### LEVEL ##################################")
+        print(level, entity)
+        print("##################################################################")
+
+
 
 ####################### SYMBOL TABLE FUNCTIONS AND CLASSES (end) #######################
 
