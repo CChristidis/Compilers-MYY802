@@ -395,13 +395,8 @@ def addFormalParameter(formal_parameter):
 
 
 def getRecord(recordName: str):
-
-    for scope in symbol_table:
-        for entity in scope.entity_list:
-            if entity.name == recordName:
-                return entity
-
-
+    entity = [entity for scope in reversed(symbol_table) for entity in scope.entity_list if entity.name == recordName][0]
+    return entity
 
 ####################### SYMBOL TABLE FUNCTIONS AND CLASSES (end) #######################
 
