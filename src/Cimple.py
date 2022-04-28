@@ -1416,8 +1416,9 @@ def get_extn(file: str) -> str:
 
 
 def main():
-    os.remove("test.symb")
-    
+    if os.path.exists("test.symb"):
+        os.remove("test.symb")
+
     input_file = sys.argv[1]
 
     # check if file has .ci extension. check_file function.
