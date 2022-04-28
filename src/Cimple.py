@@ -18,9 +18,8 @@ main_program_declared_vars = []
 
 ##### testing #####
 
-symbol_table = [[]]
-offset = 12
-
+symbol_table = []
+current_subprogram = ''
 """ activation record layout (numbered in indices): """
 # 0-th index: subprogram's return address. Size: 4 bytes
 # 1-st index: access link (It refers to information stored in other activation records that is non-local.). Size: 4 bytes
@@ -81,10 +80,23 @@ def acceptable_varname(tk: str) -> bool:
 def newTemp():
     # T_1, T_2, ..., T_n
     global temp_var_num
-    new_temp = "T_" + str(temp_var_num)
+    new_tempID = "T_" + str(temp_var_num)
     temp_var_num += 1
 
-    return new_temp
+    if len(symbol_table) > 1 :
+        offset = getRecord(current_subprogram).framelength
+
+        declared_temp_var = TemporaryVariable(new_tempID, "int", offset)
+        addRecordToCurrentLevel(declared_temp_var)
+        updateField(getRecord(current_subprogram), 4)
+
+    else:
+        offset = symbol_table[-1].offset
+
+        declared_temp_var = TemporaryVariable(new_tempID, "int", offset)
+        addRecordToCurrentLevel(declared_temp_var)
+
+    return new_tempID
 
 
 def nextQuad():
@@ -288,7 +300,7 @@ class Procedure(Subprogram):
             super().__init__(name, startingQuad, formalParameters, framelength)
 
         def __str__(self):
-            return (str(self.name) + ", " + str(self.startingQuad) + ", "  + str(self.framelength))
+            return str(self.name) + ", " + str(self.startingQuad) + ", "  + str(self.framelength)
 
 class Function(Subprogram):
         def __init__(self, name: str, startingQuad, datatype, formalParameters: list, framelength: int):
@@ -296,17 +308,18 @@ class Function(Subprogram):
             self.datatype = datatype
 
         def __str__(self):
-            return (str(self.name) + ", " + str(self.startingQuad) + ", " + str(self.datatype) + ", " + str(self.framelength))
+            return str(self.name) + ", " + str(self.startingQuad) + ", " + str(self.datatype) + ", " + str(self.framelength)
 
 
 class FormalParameter(Entity):
-    def __init__(self, name: str, datatype, mode: str):
+    def __init__(self, name: str, offset: int, datatype, mode: str):
         super().__init__(name)
+        self.offset = offset
         self.datatype = datatype
         self.mode = mode
 
     def __str__(self):
-        return (str(self.name) + ", " + str(self.datatype) + ", " + str(self.mode))
+        return str(self.name) + ", " + str(self.datatype) + ", " + str(self.offset) + ", " + str(self.mode)
 
 
 class Parameter(FormalParameter):
@@ -324,12 +337,27 @@ class SymbolicConstant(Entity):
 
 
 
+class Scope:
+    def __init__(self, level: int):
+        self.level = level
+        self.offset = 12
+        self.entity_list = []
+
+    def __str__(self):
+        for i in self.entity_list:
+            print("---------- Printing an entity of Scope at level: " + str(self.level) + " ----------")
+            print(str(i))
+            print("-------------------------------------------------")
+            print(1 * '\n')
+        return "Level: " + str(self.level) + ", " + str(self.offset)
+
 
 
 def addRecordToCurrentLevel(record):
     global symbol_table
 
-    symbol_table[-1].append(record)
+    symbol_table[-1].entity_list.append(record)
+    symbol_table[-1].offset += 4
 
 
 
@@ -337,7 +365,8 @@ def addNewLevel():
     # invoked at the START of main program or a subprogram
     global symbol_table
 
-    symbol_table.append([])
+    new_scope = Scope(len(symbol_table))
+    symbol_table.append(new_scope)
 
 
 def removeCurrentLevel():
@@ -347,16 +376,16 @@ def removeCurrentLevel():
     symbol_table.pop(-1)
 
 
-def updateField(field_value):
+def updateField(subprogram, field_value):
     # field_value is either framlength (int) or Quad object (Quad)
     global symbol_table
 
     if isinstance(field_value, int):
-        symbol_table[-1][-1].framelength += field_value
+        subprogram.framelength += field_value
 
 
     elif isinstance(field_value, Quad):
-        symbol_table[-1][-1].startingQuad = field_value
+        subprogram.startingQuad = field_value
 
 
 def addFormalParameter(formal_parameter):
@@ -366,8 +395,11 @@ def addFormalParameter(formal_parameter):
 
 
 def getRecord(recordName: str):
-    record = [record for level in reversed(symbol_table) for record in level if record.name == recordName][0]
-    return record
+
+    for scope in symbol_table:
+        for entity in scope.entity_list:
+            if entity.name == recordName:
+                return entity
 
 
 
@@ -554,12 +586,21 @@ def program():
 
 
 def block(subprogramID:str):
-    global token
+    global token, current_subprogram
+
+    current_subprogram = subprogramID
 
     if token == "{":
         token = lexical()
+
+
+        if subprogramID == program_name:
+            addNewLevel()
+
         declarations(subprogramID)
-        subprograms()
+        subprograms(subprogramID)
+
+
 
         genQuad("begin_block", subprogramID, '_', '_')
         blockstatements()
@@ -569,7 +610,9 @@ def block(subprogramID:str):
             genQuad("halt", '_', '_', '_')
 
         genQuad('end_block', subprogramID, '_', '_')
-
+        for i in symbol_table:
+            print("[" + str(i) + "]")
+        removeCurrentLevel()
         if token != '}':
             printerror_parser("'}' expected, not found.", "block", linenum)
         """
@@ -586,7 +629,7 @@ def block(subprogramID:str):
 
 def declarations(subprogramID: str):
     """ we can opt not to declare any variable whatsoever. """
-    global token, main_program_declared_vars, offset
+    global token, main_program_declared_vars
 
     while token == "declare":  # Kleene star implementation for "declare" non-terminal
         token = lexical()   # always a variable
@@ -597,9 +640,22 @@ def declarations(subprogramID: str):
             main_program_declared_vars.append(token)
 
         ############################### SYMBOL TABLE ###############################
-        declared_var = Variable(declared_varID, "int", offset)
-        addRecordToCurrentLevel(declared_var)
-        offset += 4
+        if subprogramID != program_name:
+            offset = getRecord(subprogramID).framelength
+            declared_var = Variable(declared_varID, "int", offset)
+            addRecordToCurrentLevel(declared_var)
+            updateField(getRecord(subprogramID), 4)
+
+        else:
+            offset = symbol_table[-1].offset
+
+            declared_var = Variable(declared_varID, "int", offset)
+            addRecordToCurrentLevel(declared_var)
+
+
+
+
+
         ############################### SYMBOL TABLE ###############################
 
         varlist(subprogramID)
@@ -623,11 +679,28 @@ def varlist(subprogramID: str):
         token = lexical()  # variable's id
 
         declared_varID = token
-        
+
         ############################### SYMBOL TABLE ###############################
-        declared_var = Variable(declared_varID, "int", offset)
-        addRecordToCurrentLevel(declared_var)
-        offset += 4
+
+        if subprogramID != program_name:
+            offset = getRecord(subprogramID).framelength
+
+            declared_var = Variable(declared_varID, "int", offset)
+            addRecordToCurrentLevel(declared_var)
+            updateField(getRecord(subprogramID), 4)
+
+
+
+        else:
+            offset = symbol_table[-1].offset
+
+            declared_var = Variable(declared_varID, "int", offset)
+            addRecordToCurrentLevel(declared_var)
+
+
+
+
+
         ############################### SYMBOL TABLE ###############################
 
         if subprogramID == program_name:
@@ -644,17 +717,17 @@ def varlist(subprogramID: str):
 
 
 
-def subprograms():
-    subprogram()
+def subprograms(subprogramID: str):
+    subprogram(subprogramID)
 
 
-def subprogram():
+def subprogram(subprogramID: str):
 
     global token
 
     while token in ("function", "procedure"):
 
-        # subprogram_type = token     # function or procedure?
+        subprogram_type = token     # function or procedure?
 
         token = lexical()  # subprogram's ID  (e.g. isPrime)
 
@@ -663,9 +736,15 @@ def subprogram():
         #################################### TESTING SYMBOL TABLE ####################################
 
 
-        #if subprogram_type == "function":
-            #func = Function()
+        if subprogram_type == "function":
+            subprogram = Function(subprogramID, Quad("begin_block", subprogramID, '_', '_'), "int", [], 12)
 
+        elif subprogram_type == "procedure":
+            subprogram = Procedure(subprogramID, Quad("begin_block", subprogramID, '_', '_'), [], 12)
+
+        addRecordToCurrentLevel(subprogram)
+
+        addNewLevel()
 
 
         #################################### TESTING SYMBOL TABLE ####################################
@@ -679,13 +758,13 @@ def subprogram():
         if token != '(':
             printerror_parser("'(' expected before formal parameters declaration, not found.", "subprogram", linenum)
 
-        parlist("formal")  # ends with ')'
+        parlist("formal", subprogramID)  # ends with ')'
 
         block(subprogramID)
 
 
 
-def parlist(arg_type:str):
+def parlist(arg_type:str, subprogramID: str):
     global token
 
     token = lexical()
@@ -694,7 +773,7 @@ def parlist(arg_type:str):
         actualparitem()
 
     elif arg_type == "formal":
-        formalparitem()
+        formalparitem(subprogramID)
 
     while token == ',':
         token = lexical()
@@ -702,7 +781,7 @@ def parlist(arg_type:str):
             actualparitem()
 
         elif arg_type == "formal":
-            formalparitem()
+            formalparitem(subprogramID)
 
     if token != ')':
         printerror_parser("')' expected, not found.", "statements", linenum)
@@ -738,13 +817,36 @@ def actualparitem():
         token = lexical()  # comma or closing parenthesis
 
 
-def formalparitem():
+def formalparitem(subprogramID: str):
     global token
 
     if token not in ('in', 'inout'):
         return
 
+    if token == "in":
+        eval_strategy = "cv"
+
+    elif token == "inout":
+        eval_strategy = "ref"
+
     token = lexical()  # parameter's ID
+
+    formal_parID = token
+
+    #################################### TESTING SYMBOL TABLE ####################################
+
+    offset = getRecord(subprogramID).framelength
+    formal_par = FormalParameter(formal_parID, offset, "int", eval_strategy)
+    addRecordToCurrentLevel(formal_par)
+    updateField(getRecord(subprogramID), 4)
+
+
+
+
+    #################################### TESTING SYMBOL TABLE ####################################
+
+
+    formalparitem(subprogramID)
 
     if not acceptable_varname(token):
         printerror_parser("parameter's identifier must be an alphanumerical sequence, "
@@ -883,7 +985,7 @@ def callStat():
     if token != '(':
         printerror_parser("'(' expected, not found.", "callStat", linenum)
 
-    parlist("actual")  # TODO: I THINK that parlist retain an unused token so no need for an extra one, investigate
+    parlist("actual", "")  # TODO: I THINK that parlist retain an unused token so no need for an extra one, investigate
 
     # call subprogram after we have created the actual parameters.
     genQuad("call", called_subprogram, '_', '_')
@@ -1290,7 +1392,7 @@ def idtail():
     global token
 
     if token == '(':
-        parlist("actual")
+        parlist("actual", "")
 
         return True  # indeed, we have a subprogram call
 
@@ -1315,12 +1417,9 @@ def main():
     parser()
     create_int_file()
     create_c_file()
-    for i in range(len(symbol_table)):
-        for j in symbol_table[i]:
-            print("Level " + str(i) + ": " + str(j))
-            if isinstance(j, Subprogram):
-                for formal in j.formalParameters:
-                    print(formal)
+
+
+
 
 if __name__ == "__main__":
     main()
