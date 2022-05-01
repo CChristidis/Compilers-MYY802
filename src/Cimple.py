@@ -9,7 +9,7 @@ linenum = 1
 token = ''
 fd = ''
 
-""" Intermediary code globals: """
+""" Intemediate code globals: """
 # for test set label = 99
 label = 1
 temp_var_num = 1  # temporary variable counter.
