@@ -259,12 +259,17 @@ def create_int_file():
             int_code_file.write(str(q_label) + ": " + str(q) + '\n')
 
 def create_symb_file():
+
     with open('test.symb', 'a', encoding='utf-8') as symb_file:
         symb_file.write("Number of levels at the moment: {}".format(len(symbol_table)))
         symb_file.write('\n' * 1)
 
         for i in symbol_table:
             for idx, el in enumerate(i.entity_list):
+                #if not isinstance(el, Subprogram):
+                    #loadvr(el.name, 1)
+                #print("Entity no. {}".format(str(idx + 1)) + " of Scope at level {}".format(str(i.level)) + ": [{}".format(str(el)) + "]")
+
                 symb_file.write("Entity no. {}".format(str(idx + 1)) + " of Scope at level {}".format(str(i.level)) + ": [{}".format(str(el)) + "]")
                 symb_file.write('\n' * 1)
             symb_file.write('\n' * 1)
@@ -272,6 +277,9 @@ def create_symb_file():
 ####################### FILE CREATOR FUNCTIONS AND CLASSES (end) #######################
 
 ####################### SYMBOL TABLE FUNCTIONS AND CLASSES (start) #######################
+
+
+
 
 
 # Every instantiation of this class is created and inserted into the symbol table at the start of
@@ -406,12 +414,106 @@ def getRecord(recordName: str):
     return entity
 
 
-
-
-
-
-
 ####################### SYMBOL TABLE FUNCTIONS AND CLASSES (end) #######################
+
+
+####################### FINAL CODE FUNCTIONS AND CLASSES (start) #######################
+
+def search_var(var_name):
+    for i in reversed(symbol_table):
+        for idx, el in enumerate(i.entity_list):
+            if el.name == str(var_name):
+                if not isinstance(el, Subprogram):
+                    return el, i.level
+                else:
+                    printerror_parser("Undeclared variable: " + el.name, "var search", linenum)
+
+
+
+def gnvl_code(v):
+    current_lvl = len(symbol_table) - 1
+    entity, entity_level = search_var(v)
+
+    n = current_lvl - entity_level - 1
+    with open('test.asm', 'a', encoding='utf-8') as final_file:
+        final_file.write('lw $t0, -4($sp)\n')
+
+        for i in range(n, 0, -1):
+            final_file.write('lw $t0, -4($t0)\n')
+
+        final_file.write('addi $t0, $t0, {}'.format(-entity.offset) + "\n")
+
+
+
+def is_global_case(entity, entity_level):
+    # if global variable
+    return isinstance(entity, Variable) and entity_level == 0
+
+
+def is_current_level_cv_case(entity, entity_level, current_lvl):
+    # if local variable or temporary variable or call-by-value formal parameter.
+    return (isinstance(entity, Variable) and current_lvl == entity_level) or (isinstance(entity, TemporaryVariable)) \
+           or (isinstance(entity, FormalParameter) and current_lvl == entity_level and entity.mode == "cv")
+
+
+def is_current_level_ref_case(entity, entity_level, current_lvl):
+    return isinstance(entity, FormalParameter) and entity.mode == "ref" and current_lvl == entity_level
+
+
+def is_ancestor_level_cv_case(entity, entity_level, current_lvl):
+    return (isinstance(entity, Variable) and current_lvl < entity_level) or\
+           ((isinstance(entity, FormalParameter) and entity.mode == "cv" and current_lvl > entity_level))
+
+
+def is_ancestor_level_ref_case(entity, entity_level, current_lvl):
+    return isinstance(entity, FormalParameter) and entity.mode == "ref" and current_lvl > entity_level
+
+
+
+# store v's value at reg register.
+def loadvr(v, reg):
+
+    with open('test.asm', 'a', encoding='utf-8') as final_file:
+        entity, entity_level = search_var(v)
+        current_lvl = len(symbol_table) - 1
+
+
+        print('======================================')
+        print(entity.name, entity_level, current_lvl)
+        if isinstance(entity, FormalParameter):
+            print(entity.mode)
+
+        if is_global_case(entity, entity_level):
+            # note that we are using $gp register (global pointer) so that we mitigate
+            # the cost of global variables fetching.
+            final_file.write('lw $t{}'.format(int(reg)) + ' ,{}($gp)\n'.format(-entity.offset))
+
+        elif is_current_level_cv_case(entity, entity_level, current_lvl):
+                final_file.write('lw $t{}'.format(int(reg)) + ' ,{}($sp)\n'.format(-entity.offset))
+
+
+        elif is_current_level_ref_case(entity, entity_level, current_lvl):
+            # find the address
+            final_file.write('lw $t0' + ' ,{}($sp)\n'.format(-entity.offset))
+            # store the value that is stored in that address
+            final_file.write('lw $t{}'.format(int(reg)) + ' ,0($t0)\n')
+
+        elif is_ancestor_level_cv_case(entity, entity_level, current_lvl):
+                gnvl_code(v)
+                # value found. Store it into reg.
+                final_file.write('lw $t{}'.format(int(reg))  + ',0($t0)\n')
+
+        elif is_ancestor_level_ref_case(entity, entity_level, current_lvl):
+            gnvl_code(v)
+            # address found. Store it into t0.
+            final_file.write('lw $t0, 0(%t0)\n')
+            # value found. Store it into reg.
+            final_file.write('lw $t{}'.format(int(reg)) + ' ,0($t0)\n')
+
+
+
+####################### FINAL CODE FUNCTIONS AND CLASSES (end) #######################
+
 
 class LexAutomaton:
     def __init__(self, fd):
@@ -618,6 +720,7 @@ def block(subprogramID:str):
             genQuad("halt", '_', '_', '_')
 
         genQuad('end_block', subprogramID, '_', '_')
+
 
         create_symb_file()
         removeCurrentLevel()
@@ -1406,6 +1509,9 @@ def idtail():
         return True  # indeed, we have a subprogram call
 
 
+
+
+
 def check_file(path: str) -> bool:
     return path[-3:] == ".ci"
 
@@ -1424,6 +1530,9 @@ def clear_existing_files_from_dir():
     if os.path.exists("test.int"):
         os.remove("test.int")
 
+    if os.path.exists("test.asm"):
+        os.remove("test.asm")
+
 def main():
     clear_existing_files_from_dir()
     input_file = sys.argv[1]
@@ -1434,11 +1543,11 @@ def main():
 
     openfile(input_file)
     parser()
+
     create_int_file()
     create_c_file()
 
 
+
 if __name__ == "__main__":
     main()
-
-
