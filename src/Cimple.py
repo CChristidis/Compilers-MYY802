@@ -15,6 +15,7 @@ label = 1
 temp_var_num = 1  # temporary variable counter.
 all_quads = {}
 main_program_declared_vars = []
+actual_pars_cnt = 0
 
 ##### testing #####
 
@@ -428,6 +429,14 @@ def search_var(var_name):
                 else:
                     printerror_parser("Undeclared variable: " + el.name, "var search", linenum)
 
+def search_subprogram(fun_name):
+    for i in reversed(symbol_table):
+        for idx, el in enumerate(i.entity_list):
+            if el.name == str(fun_name):
+                if isinstance(el, Subprogram):
+                    return el, i.level
+                else:
+                    printerror_parser("Undeclared subprogram: " + el.name, "subprogram search", linenum)
 
 
 def gnvl_code(v):
@@ -474,34 +483,67 @@ def is_ancestor_level_ref_case(entity, entity_level, current_lvl):
 def loadvr(v, reg):
 
     with open('test.asm', 'a', encoding='utf-8') as final_file:
+
+        if v.isdigit():
+            final_file.write('li $t{}'.format(int(reg)) + ', {}\n'.format(int(v)))
+        else:
+            entity, entity_level = search_var(v)
+            current_lvl = len(symbol_table) - 1
+
+            if is_global_case(entity, entity_level):
+                # note that we are using $gp register (global pointer) so that we mitigate
+                # the cost of global variables fetching.
+                final_file.write('lw $t{}'.format(int(reg)) + ' ,{}($gp)\n'.format(-entity.offset))
+
+            elif is_current_level_cv_case(entity, entity_level, current_lvl):
+                final_file.write('lw $t{}'.format(int(reg)) + ' ,{}($sp)\n'.format(-entity.offset))
+
+
+            elif is_current_level_ref_case(entity, entity_level, current_lvl):
+                # find the address
+                final_file.write('lw $t0' + ' ,{}($sp)\n'.format(-entity.offset))
+                # store the value that is stored in that address
+                final_file.write('lw $t{}'.format(int(reg)) + ' ,0($t0)\n')
+
+            elif is_ancestor_level_cv_case(entity, entity_level, current_lvl):
+                gnvl_code(v)
+                # value found. Store it into reg.
+                final_file.write('lw $t{}'.format(int(reg))  + ',0($t0)\n')
+
+            elif is_ancestor_level_ref_case(entity, entity_level, current_lvl):
+                gnvl_code(v)
+                # address found. Store it into t0.
+                final_file.write('lw $t0, 0(%t0)\n')
+                # value found. Store it into reg.
+                final_file.write('lw $t{}'.format(int(reg)) + ' ,0($t0)\n')
+
+
+# store v's value at reg register.
+def storerv(reg, v):
+    with open('test.asm', 'a', encoding='utf-8') as final_file:
         entity, entity_level = search_var(v)
         current_lvl = len(symbol_table) - 1
 
-
-        print('======================================')
+        print('================== STOREVR ====================')
         print(entity.name, entity_level, current_lvl)
+
         if isinstance(entity, FormalParameter):
             print(entity.mode)
 
         if is_global_case(entity, entity_level):
-            # note that we are using $gp register (global pointer) so that we mitigate
-            # the cost of global variables fetching.
-            final_file.write('lw $t{}'.format(int(reg)) + ' ,{}($gp)\n'.format(-entity.offset))
+            final_file.write('sw $t{}'.format(int(reg)) + ' ,{}($gp)\n'.format(-entity.offset))
 
         elif is_current_level_cv_case(entity, entity_level, current_lvl):
-                final_file.write('lw $t{}'.format(int(reg)) + ' ,{}($sp)\n'.format(-entity.offset))
-
+            final_file.write('sw $t{}'.format(int(reg)) + ' ,{}($sp)\n'.format(-entity.offset))
 
         elif is_current_level_ref_case(entity, entity_level, current_lvl):
-            # find the address
             final_file.write('lw $t0' + ' ,{}($sp)\n'.format(-entity.offset))
-            # store the value that is stored in that address
-            final_file.write('lw $t{}'.format(int(reg)) + ' ,0($t0)\n')
+            final_file.write('sw $t{}'.format(int(reg)) + ' ,0($t0)\n')
 
         elif is_ancestor_level_cv_case(entity, entity_level, current_lvl):
-                gnvl_code(v)
-                # value found. Store it into reg.
-                final_file.write('lw $t{}'.format(int(reg))  + ',0($t0)\n')
+            gnvl_code(v)
+            # value found. Store it into reg.
+            final_file.write('lw $t{}'.format(int(reg)) + ',0($t0)\n')
 
         elif is_ancestor_level_ref_case(entity, entity_level, current_lvl):
             gnvl_code(v)
@@ -509,6 +551,106 @@ def loadvr(v, reg):
             final_file.write('lw $t0, 0(%t0)\n')
             # value found. Store it into reg.
             final_file.write('lw $t{}'.format(int(reg)) + ' ,0($t0)\n')
+
+
+
+def is_var_or_cv_par(entity):
+    return isinstance(entity, Variable) or (isinstance(entity, Parameter) and entity.mode == "cv")
+
+def is_ref_par(entity):
+    return isinstance(entity, Parameter) and entity.mode == "ref"
+
+
+def create_asm_file(quad, current_subprogram):
+    global actual_pars_cnt
+
+    num_op_cimple = ('+', '-', '*', '/')
+    num_op_asm = ('add', 'sub', 'mul', 'div')
+
+    rel_op_cimple = ('=', '<>', '<', '>', '<=', '>=')
+    rel_op_asm = ('beq', 'bne', 'blt', 'bgt', 'ble', 'bge')
+
+    with open('test.asm', 'a', encoding='utf-8') as final_file:
+        if quad.op == "jump":
+            final_file.write('j L_{} \n'.format(int(quad.target)))
+
+        elif quad.op in num_op_cimple:
+            ret_op = num_op_asm[num_op_cimple.index(quad.op)]
+            loadvr(quad.oprnd1, '1')
+            loadvr(quad.oprnd2, '2')
+            final_file.write(ret_op +' $t1, $t1, $t2 \n')
+
+        elif quad.op == ":=":
+            loadvr(quad.oprnd1, '1')
+            storerv('1', quad.target)
+
+        elif quad.op in rel_op_cimple:
+            ret_op = rel_op_asm[rel_op_cimple.index(quad.op)]
+            loadvr(quad.oprnd1, '1')
+            loadvr(quad.oprnd2, '2')
+
+            final_file.write(ret_op + ' $t1, $t2, L_{} \n'.format(int(quad.target)))
+
+        elif quad.op == "in":
+            final_file.write('li $a7, 5\n')
+            final_file.write('ecall\n')
+
+        elif quad.op == "out":
+            final_file.write('li $a0, ' + quad.oprnd1 + "\n")
+            final_file.write('li $a7, 1\n')
+            final_file.write('ecall\n')
+            final_file.write('la $a0, str_nl\n')
+            final_file.write('li $a7, 4\n')
+            final_file.write('ecall\n')
+
+        elif quad.op == 'halt':
+            final_file.write('li, $a0, 0\n')
+            final_file.write('li, $a7, 93\n')
+            final_file.write('ecall\n')
+
+        elif quad.op == "ret":
+            loadvr(quad.oprnd1, '1')
+            final_file.write('lw $t0, -8($sp)\n')
+            final_file.write('sw $t1, 0($t0)\n')
+
+        elif quad.op == 'par':
+            func, func_level = search_subprogram(current_subprogram)
+            framelength = func.framelength
+            final_file.write('addi $fp, $sp, {} \n'.format(-framelength))
+
+            par_offset = 12 + 4 * actual_pars_cnt
+            actual_pars_cnt += 1
+
+            if quad.oprnd2 == 'cv':
+                loadvr(quad.oprnd1, '0')
+                final_file.write('sw $t0, {}($fp)\n'.format(-par_offset))
+
+            elif quad.oprnd2 == 'ref':
+                par_entity, par_level = search_var(quad.oprnd1)
+
+                if par_level == func_level:
+                    if is_var_or_cv_par(par_entity):
+                        final_file.write('addi $t0, $sp, {}\n'.format(-par_entity.offset))
+                        final_file.write('sw $t0, {}($fp)\n'.format(-par_offset))
+
+                    elif is_ref_par(par_entity):
+                        final_file.write('lw $t0, {}($sp)\n'.format(-par_entity.offset))
+                        final_file.write('sw $t0, {}($fp)\n'.format(-par_offset))
+                else:
+                    if is_var_or_cv_par(par_entity):
+                        gnvl_code(quad.oprnd1)
+                        final_file.write('sw $t0, {}($fp)\n'.format(-par_entity.offset))
+
+                    elif is_ref_par(par_entity):
+                        gnvl_code(quad.oprnd1)
+                        outfile.write('lw $t0, 0($t0)\n')
+                        outfile.write('sw $t0, {}($fp)\n'.format(-par_offset))
+
+            elif quad.oprnd2 == 'ret':
+                par_entity, par_level = search_var(quad.oprnd1)
+
+                outfile.write('addi $t0, $sp, {}\n'.format(-par_entity.offset))
+                outfile.write('sw $t0, -8($fp)\n')
 
 
 
@@ -711,8 +853,10 @@ def block(subprogramID:str):
         subprograms(subprogramID)
 
 
+        start_quad = nextQuad()
 
         genQuad("begin_block", subprogramID, '_', '_')
+
         blockstatements()
 
         # H halt emfanizetai mono sto kuriws programma. Topotheteitai prin apo to end_block.
@@ -721,6 +865,9 @@ def block(subprogramID:str):
 
         genQuad('end_block', subprogramID, '_', '_')
 
+        for key, value in all_quads.items():
+            if value >= start_quad and value <= max(all_quads.values()):
+                create_asm_file(key, current_subprogram[-1])
 
         create_symb_file()
         removeCurrentLevel()
@@ -877,11 +1024,12 @@ def subprogram(subprogramID: str):
 
 
 def parlist(arg_type:str, subprogramID: str):
-    global token
+    global token, actual_pars_cnt
 
     token = lexical()
 
     if arg_type == "actual":
+        actual_pars_cnt = 0
         actualparitem()
 
     elif arg_type == "formal":
@@ -1549,5 +1697,8 @@ def main():
 
 
 
+
 if __name__ == "__main__":
     main()
+
+
