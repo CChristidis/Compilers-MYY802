@@ -484,7 +484,7 @@ def loadvr(v, reg):
 
     with open('test.asm', 'a', encoding='utf-8') as final_file:
 
-        if v.isdigit():
+        if str(v).isdigit():
             final_file.write('li $t{}'.format(int(reg)) + ', {}\n'.format(int(v)))
         else:
             entity, entity_level = search_var(v)
@@ -524,11 +524,7 @@ def storerv(reg, v):
         entity, entity_level = search_var(v)
         current_lvl = len(symbol_table) - 1
 
-        print('================== STOREVR ====================')
-        print(entity.name, entity_level, current_lvl)
 
-        if isinstance(entity, FormalParameter):
-            print(entity.mode)
 
         if is_global_case(entity, entity_level):
             final_file.write('sw $t{}'.format(int(reg)) + ' ,{}($gp)\n'.format(-entity.offset))
@@ -614,8 +610,12 @@ def create_asm_file(quad, current_subprogram):
             final_file.write('sw $t1, 0($t0)\n')
 
         elif quad.op == 'par':
-            func, func_level = search_subprogram(current_subprogram)
-            framelength = func.framelength
+            if current_subprogram == program_name:
+                func_level = 0
+                framelength = symbol_table[0].offset
+            else:
+                func, func_level = search_subprogram(current_subprogram)
+                framelength = func.framelength
             final_file.write('addi $fp, $sp, {} \n'.format(-framelength))
 
             par_offset = 12 + 4 * actual_pars_cnt
@@ -643,14 +643,14 @@ def create_asm_file(quad, current_subprogram):
 
                     elif is_ref_par(par_entity):
                         gnvl_code(quad.oprnd1)
-                        outfile.write('lw $t0, 0($t0)\n')
-                        outfile.write('sw $t0, {}($fp)\n'.format(-par_offset))
+                        final_file.write('lw $t0, 0($t0)\n')
+                        final_file.write('sw $t0, {}($fp)\n'.format(-par_offset))
 
             elif quad.oprnd2 == 'ret':
                 par_entity, par_level = search_var(quad.oprnd1)
 
-                outfile.write('addi $t0, $sp, {}\n'.format(-par_entity.offset))
-                outfile.write('sw $t0, -8($fp)\n')
+                final_file.write('addi $t0, $sp, {}\n'.format(-par_entity.offset))
+                final_file.write('sw $t0, -8($fp)\n')
 
 
 
@@ -868,6 +868,8 @@ def block(subprogramID:str):
         for key, value in all_quads.items():
             if value >= start_quad and value <= max(all_quads.values()):
                 create_asm_file(key, current_subprogram[-1])
+
+
 
         create_symb_file()
         removeCurrentLevel()
