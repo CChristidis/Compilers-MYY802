@@ -15,12 +15,16 @@ label = 1
 temp_var_num = 1  # temporary variable counter.
 all_quads = {}
 main_program_declared_vars = []
+
+
 actual_pars_cnt = 0
+first_quads_label_subprogrs = {}  # store every declared subrpogram's first quad label
 
-##### testing #####
 
+""" Symbol table globals: """
 symbol_table = []
 current_subprogram = []
+
 """ activation record layout (numbered in indices): """
 # 0-th index: subprogram's return address. Size: 4 bytes
 # 1-st index: access link (It refers to information stored in other activation records that is non-local.). Size: 4 bytes
@@ -111,7 +115,6 @@ def genQuad(op, oprnd1, oprnd2, target):
     quad = Quad(op, oprnd1, oprnd2, target)
 
     all_quads[quad] = label
-    #print(str(label) + ": " + str(quad))
 
     label += 1
 
@@ -135,9 +138,6 @@ def backpatch(list, label):
     for q, q_label in all_quads.items():
         if q_label in list:
             q.target = label  # set q's 4th field to label
-            #print("------------------CHANGED-------------------")
-            #print(str(q_label) + ": " + str(q))
-            #print("------------------CHANGED-------------------")
 
 
 class Quad():
@@ -267,10 +267,6 @@ def create_symb_file():
 
         for i in symbol_table:
             for idx, el in enumerate(i.entity_list):
-                #if not isinstance(el, Subprogram):
-                    #loadvr(el.name, 1)
-                #print("Entity no. {}".format(str(idx + 1)) + " of Scope at level {}".format(str(i.level)) + ": [{}".format(str(el)) + "]")
-
                 symb_file.write("Entity no. {}".format(str(idx + 1)) + " of Scope at level {}".format(str(i.level)) + ": [{}".format(str(el)) + "]")
                 symb_file.write('\n' * 1)
             symb_file.write('\n' * 1)
@@ -434,7 +430,7 @@ def search_subprogram(fun_name):
         for idx, el in enumerate(i.entity_list):
             if el.name == str(fun_name):
                 if isinstance(el, Subprogram):
-                    return el, i.level
+                    return el, i.level + 1
                 else:
                     printerror_parser("Undeclared subprogram: " + el.name, "subprogram search", linenum)
 
@@ -483,19 +479,21 @@ def is_ancestor_level_ref_case(entity, entity_level, current_lvl):
 def loadvr(v, reg):
 
     with open('test.asm', 'a', encoding='utf-8') as final_file:
-
         if str(v).isdigit():
             final_file.write('li $t{}'.format(int(reg)) + ', {}\n'.format(int(v)))
         else:
             entity, entity_level = search_var(v)
+
             current_lvl = len(symbol_table) - 1
 
             if is_global_case(entity, entity_level):
+
                 # note that we are using $gp register (global pointer) so that we mitigate
                 # the cost of global variables fetching.
                 final_file.write('lw $t{}'.format(int(reg)) + ' ,{}($gp)\n'.format(-entity.offset))
 
             elif is_current_level_cv_case(entity, entity_level, current_lvl):
+
                 final_file.write('lw $t{}'.format(int(reg)) + ' ,{}($sp)\n'.format(-entity.offset))
 
 
@@ -527,6 +525,7 @@ def storerv(reg, v):
 
 
         if is_global_case(entity, entity_level):
+
             final_file.write('sw $t{}'.format(int(reg)) + ' ,{}($gp)\n'.format(-entity.offset))
 
         elif is_current_level_cv_case(entity, entity_level, current_lvl):
@@ -556,9 +555,26 @@ def is_var_or_cv_par(entity):
 def is_ref_par(entity):
     return isinstance(entity, Parameter) and entity.mode == "ref"
 
+def prepend_stuff_at_file(quad_num):
 
-def create_asm_file(quad, current_subprogram):
-    global actual_pars_cnt
+    with open("test.asm", 'r+') as final_file:
+        readcontent = final_file.read()  # store the read value of exe.txt into
+        # readcontent
+        final_file.seek(0, 0)  # Takes the cursor to top line
+        final_file.write(".data\n")
+        final_file.write("str_nl: .asciz " + '"\\n" \n')
+        final_file.write(".text\n")
+        #  fusika h j L_main prepei na dimiourgithei otan ksekina h metafrash ths main.
+        final_file.write('j L_{} \n'.format(quad_num))
+        final_file.write(readcontent)
+
+
+
+
+def create_asm_file(quad, current_subprogram, quad_num):
+    global actual_pars_cnt, first_quads_label_subprogrs
+
+
 
     num_op_cimple = ('+', '-', '*', '/')
     num_op_asm = ('add', 'sub', 'mul', 'div')
@@ -567,8 +583,35 @@ def create_asm_file(quad, current_subprogram):
     rel_op_asm = ('beq', 'bne', 'blt', 'bgt', 'ble', 'bge')
 
     with open('test.asm', 'a', encoding='utf-8') as final_file:
+        if quad.op != "halt" and "T_" not in str(quad.oprnd1):
+            final_file.write('L_' + str(quad_num) + ':' + '\n')
+        elif quad.op == "halt":
+            final_file.write('exit:\n')
+
         if quad.op == "jump":
             final_file.write('j L_{} \n'.format(int(quad.target)))
+
+        elif quad.op == "halt":
+            final_file.write("li $a0,0 \n")
+            final_file.write("li $v0, 93\n")
+            final_file.write("syscall\n")
+
+        elif quad.op == 'begin_block':
+            first_quads_label_subprogrs[current_subprogram] = quad_num + 1
+            final_file.write('sw $ra,0($sp)\n')
+
+            if current_subprogram == program_name:
+                prepend_stuff_at_file(quad_num)
+                final_file.write('addi $sp, $sp, {}\n'.format(symbol_table[0].offset))
+                final_file.write('move $gp, $sp\n')
+
+        elif quad.op == 'end_block':
+            if current_subprogram == program_name:
+                final_file.write('j exit \n')
+            else:
+                final_file.write('lw $ra,0($sp)\n')
+                final_file.write('jr $ra\n')
+
 
         elif quad.op in num_op_cimple:
             ret_op = num_op_asm[num_op_cimple.index(quad.op)]
@@ -588,21 +631,18 @@ def create_asm_file(quad, current_subprogram):
             final_file.write(ret_op + ' $t1, $t2, L_{} \n'.format(int(quad.target)))
 
         elif quad.op == "in":
-            final_file.write('li $a7, 5\n')
-            final_file.write('ecall\n')
+            final_file.write('li $v0, 5\n')
+            final_file.write('syscall\n')
 
         elif quad.op == "out":
-            final_file.write('li $a0, ' + quad.oprnd1 + "\n")
-            final_file.write('li $a7, 1\n')
-            final_file.write('ecall\n')
+            loadvr(quad.oprnd1, '5')
+            final_file.write('li $v0, 1\n')
+            final_file.write('addi $a0, $t5, 0\n')
+            final_file.write('syscall \n')
             final_file.write('la $a0, str_nl\n')
-            final_file.write('li $a7, 4\n')
-            final_file.write('ecall\n')
+            final_file.write('li $v0, 4\n')
+            final_file.write('syscall \n')
 
-        elif quad.op == 'halt':
-            final_file.write('li, $a0, 0\n')
-            final_file.write('li, $a7, 93\n')
-            final_file.write('ecall\n')
 
         elif quad.op == "ret":
             loadvr(quad.oprnd1, '1')
@@ -651,6 +691,31 @@ def create_asm_file(quad, current_subprogram):
 
                 final_file.write('addi $t0, $sp, {}\n'.format(-par_entity.offset))
                 final_file.write('sw $t0, -8($fp)\n')
+
+        elif quad.op == "call":
+            # caller function is the subprogram which name is the 2nd parameter
+            # what if caller function is the main program? Hint: the callee is never in the same level
+            if current_subprogram == program_name:
+                caller_level = 0
+                caller_framelength = symbol_table[0].offset
+            else:
+                caller, caller_level = search_subprogram(current_subprogram)
+                caller_framelength = caller.framelength
+
+            called, called_level = search_subprogram(quad.oprnd1)
+            called_framelength = called.framelength
+
+            if caller_level == called_level:
+                final_file.write('lw $t0,-4($sp)\n')
+                final_file.write('sw $t0,-4($fp)\n')
+            else:
+                final_file.write('sw $sp, 4($fp)\n')
+
+            final_file.write('addi $sp, $sp, {}\n'.format(-caller_framelength))
+            final_file.write('jal L_{}\n'.format(str(first_quads_label_subprogrs.get(called.name))))
+            final_file.write('addi $sp, $sp, {}\n' .format(caller_framelength))
+
+
 
 
 
@@ -867,7 +932,7 @@ def block(subprogramID:str):
 
         for key, value in all_quads.items():
             if value >= start_quad and value <= max(all_quads.values()):
-                create_asm_file(key, current_subprogram[-1])
+                create_asm_file(key, current_subprogram[-1], value)
 
 
 
@@ -1696,6 +1761,8 @@ def main():
 
     create_int_file()
     create_c_file()
+
+
 
 
 
