@@ -650,8 +650,6 @@ def create_asm_file(quad, current_subprogram, quad_num):
         loadvr(quad.oprnd1, '1')
         final_file.write('lw $t0, -8($sp)\n')
         final_file.write('sw $t1, 0($t0)\n')
-        final_file.write('lw $ra, 0($sp)\n')
-        final_file.write('jr $ra\n')
 
 
     elif quad.op == 'par':
@@ -669,7 +667,7 @@ def create_asm_file(quad, current_subprogram, quad_num):
             final_file.write('addi $fp, $sp, {} \n'.format(-framelength))
 
         # calculate the offset of the parameter.
-        par_offset = 12 + 4 * (actual_pars_cnt - 1)
+        par_offset = 12 + 4 * actual_pars_cnt
         actual_pars_cnt += 1
 
         if quad.oprnd2 == 'cv':
