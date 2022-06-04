@@ -8,6 +8,7 @@ program_name = ""
 linenum = 1
 token = ''
 fd = ''
+final_file = ''
 
 """ Intemediate code globals: """
 # for test set label = 99
@@ -47,10 +48,11 @@ halt_label = 0
 # First function's parameter can possibly start at offset 12.
 
 def openfile(path: str):
-    global fd
+    global fd, final_file
 
     try:
         fd = open(path, 'r')
+        final_file = open("test.asm", "w+")
 
     except IOError:
         sys.exit("Error: File" + path + " does not appear to exist.")
@@ -442,14 +444,14 @@ def gnvl_code(v):
     entity, entity_level = search_var(v)
 
     n = current_lvl - entity_level - 1
-    with open('test.asm', 'a', encoding='utf-8') as final_file:
-        final_file.write('lw $t0, -4($sp)\n')
 
-        for i in range(n, 0, -1):
-            final_file.write('lw $t0, -4($t0)\n')
+    final_file.write('lw $t0, -4($sp)\n')
 
-        final_file.write('addi $t0, $t0, {}'.format(-entity.offset) + "\n")
+    for i in range(n, 0, -1):
+        final_file.write('lw $t0, -4($t0)\n')
 
+    final_file.write('addi $t0, $t0, {}'.format(-entity.offset) + "\n")
+    final_file.flush()
 
 
 def is_global_case(entity, entity_level):
@@ -480,76 +482,75 @@ def is_ancestor_level_ref_case(entity, entity_level, current_lvl):
 # store v's value at reg register.
 def loadvr(v, reg):
 
-    with open('test.asm', 'a', encoding='utf-8') as final_file:
-        if str(v).isdigit():
-            final_file.write('li $t{}'.format(int(reg)) + ', {}\n'.format(int(v)))
-        else:
-            entity, entity_level = search_var(v)
 
-            current_lvl = len(symbol_table) - 1
-
-            if is_global_case(entity, entity_level):
-
-                # note that we are using $gp register (global pointer) so that we mitigate
-                # the cost of global variables fetching.
-                final_file.write('lw $t{}'.format(int(reg)) + ' ,{}($gp)\n'.format(-entity.offset))
-
-            elif is_current_level_cv_case(entity, entity_level, current_lvl):
-
-                final_file.write('lw $t{}'.format(int(reg)) + ' ,{}($sp)\n'.format(-entity.offset))
-
-
-            elif is_current_level_ref_case(entity, entity_level, current_lvl):
-                # find the address
-                final_file.write('lw $t0' + ' ,{}($sp)\n'.format(-entity.offset))
-                # store the value that is stored in that address
-                final_file.write('lw $t{}'.format(int(reg)) + ' ,0($t0)\n')
-
-            elif is_ancestor_level_cv_case(entity, entity_level, current_lvl):
-                gnvl_code(v)
-                # value found. Store it into reg.
-                final_file.write('lw $t{}'.format(int(reg))  + ',0($t0)\n')
-
-            elif is_ancestor_level_ref_case(entity, entity_level, current_lvl):
-                gnvl_code(v)
-                # address found. Store it into t0.
-                final_file.write('lw $t0, 0($t0)\n')
-                # value found. Store it into reg.
-                final_file.write('lw $t{}'.format(int(reg)) + ' ,0($t0)\n')
-
-
-# store v's value at reg register.
-def storerv(reg, v):
-    with open('test.asm', 'a', encoding='utf-8') as final_file:
+    if str(v).isdigit():
+        final_file.write('li $t{}'.format(int(reg)) + ', {}\n'.format(int(v)))
+    else:
         entity, entity_level = search_var(v)
+
         current_lvl = len(symbol_table) - 1
-
-
 
         if is_global_case(entity, entity_level):
 
-            final_file.write('sw $t{}'.format(int(reg)) + ' ,{}($gp)\n'.format(-entity.offset))
+            # note that we are using $gp register (global pointer) so that we mitigate
+            # the cost of global variables fetching.
+            final_file.write('lw $t{}'.format(int(reg)) + ' ,{}($gp)\n'.format(-entity.offset))
 
         elif is_current_level_cv_case(entity, entity_level, current_lvl):
-            final_file.write('sw $t{}'.format(int(reg)) + ' ,{}($sp)\n'.format(-entity.offset))
+
+            final_file.write('lw $t{}'.format(int(reg)) + ' ,{}($sp)\n'.format(-entity.offset))
+
 
         elif is_current_level_ref_case(entity, entity_level, current_lvl):
+            # find the address
             final_file.write('lw $t0' + ' ,{}($sp)\n'.format(-entity.offset))
-            final_file.write('sw $t{}'.format(int(reg)) + ' ,0($t0)\n')
+            # store the value that is stored in that address
+            final_file.write('lw $t{}'.format(int(reg)) + ' ,0($t0)\n')
 
         elif is_ancestor_level_cv_case(entity, entity_level, current_lvl):
             gnvl_code(v)
             # value found. Store it into reg.
-            final_file.write('sw $t{}'.format(int(reg)) + ',0($t0)\n')
+            final_file.write('lw $t{}'.format(int(reg))  + ',0($t0)\n')
 
         elif is_ancestor_level_ref_case(entity, entity_level, current_lvl):
             gnvl_code(v)
             # address found. Store it into t0.
             final_file.write('lw $t0, 0($t0)\n')
             # value found. Store it into reg.
-            final_file.write('sw $t{}'.format(int(reg)) + ' ,0($t0)\n')
+            final_file.write('lw $t{}'.format(int(reg)) + ' ,0($t0)\n')
+    final_file.flush()
+
+# store v's value at reg register.
+def storerv(reg, v):
+
+    entity, entity_level = search_var(v)
+    current_lvl = len(symbol_table) - 1
 
 
+
+    if is_global_case(entity, entity_level):
+        final_file.write('sw $t{}'.format(int(reg)) + ' ,{}($gp)\n'.format(-entity.offset))
+
+    elif is_current_level_cv_case(entity, entity_level, current_lvl):
+        final_file.write('sw $t{}'.format(int(reg)) + ' ,{}($sp)\n'.format(-entity.offset))
+
+    elif is_current_level_ref_case(entity, entity_level, current_lvl):
+        final_file.write('lw $t0' + ' ,{}($sp)\n'.format(-entity.offset))
+        final_file.write('sw $t{}'.format(int(reg)) + ' ,0($t0)\n')
+
+    elif is_ancestor_level_cv_case(entity, entity_level, current_lvl):
+        gnvl_code(v)
+        # value found. Store it into reg.
+        final_file.write('sw $t{}'.format(int(reg)) + ',0($t0)\n')
+
+    elif is_ancestor_level_ref_case(entity, entity_level, current_lvl):
+        gnvl_code(v)
+        # address found. Store it into t0.
+        final_file.write('lw $t0, 0($t0)\n')
+        # value found. Store it into reg.
+        final_file.write('sw $t{}'.format(int(reg)) + ' ,0($t0)\n')
+
+    final_file.flush()
 
 def is_var_or_cv_par(entity):
     return isinstance(entity, Variable) or (isinstance(entity, Parameter) and entity.mode == "cv")
@@ -557,26 +558,9 @@ def is_var_or_cv_par(entity):
 def is_ref_par(entity):
     return isinstance(entity, Parameter) and entity.mode == "ref"
 
-def prepend_stuff_at_file(quad_num):
-
-    with open("test.asm", 'r+') as final_file:
-        readcontent = final_file.read()  # store the read value of exe.txt into
-        # readcontent
-        final_file.seek(0, 0)  # Takes the cursor to top line
-        final_file.write(".data\n")
-        final_file.write("str_nl: .asciz " + '"\\n" \n')
-        final_file.write(".text\n")
-        #  fusika h j L_main prepei na dimiourgithei otan ksekina h metafrash ths main.
-        final_file.write('j L_{} \n'.format(quad_num))
-        final_file.write(readcontent)
-
-
-
 
 def create_asm_file(quad, current_subprogram, quad_num):
     global actual_pars_cnt, first_quads_label_subprogrs, halt_label
-
-
 
     num_op_cimple = ('+', '-', '*', '/')
     num_op_asm = ('add', 'sub', 'mul', 'div')
@@ -584,168 +568,180 @@ def create_asm_file(quad, current_subprogram, quad_num):
     rel_op_cimple = ('=', '<>', '<', '>', '<=', '>=')
     rel_op_asm = ('beq', 'bne', 'blt', 'bgt', 'ble', 'bge')
 
-    with open('test.asm', 'a', encoding='utf-8') as final_file:
-
-        if quad.op == "halt":
-            halt_label = quad_num
-
-        final_file.write('L_' + str(quad_num) + ':' + '\n')
 
 
-        if quad.op == "jump":
-            final_file.write('j L_{} \n'.format(int(quad.target)))
+    if quad.op == "halt":
+        halt_label = quad_num
 
-        elif quad.op == "halt":
-            final_file.write("li $a0,0 \n")
-            final_file.write("li $v0, 93\n")
-            final_file.write("syscall\n")
+    if quad_num == 1:
+        final_file.write('\n' * 25)  # padding.
 
-        elif quad.op == 'begin_block':
-            first_quads_label_subprogrs[current_subprogram] = quad_num + 1
-            final_file.write('sw $ra,0($sp)\n')
-
-            if current_subprogram == program_name:
-                prepend_stuff_at_file(quad_num)
-                final_file.write('addi $sp, $sp, {}\n'.format(symbol_table[0].offset))
-                final_file.write('move $gp, $sp\n')
-
-        elif quad.op == 'end_block':
-            if current_subprogram == program_name:
-                final_file.write('j L_{} \n'.format(halt_label))
-            else:
-                final_file.write('lw $ra,0($sp)\n')
-                final_file.write('jr $ra\n')
+    final_file.write('L_' + str(quad_num) + ':' + '\n')
 
 
-        elif quad.op in num_op_cimple:
-            ret_op = num_op_asm[num_op_cimple.index(quad.op)]
-            loadvr(quad.oprnd1, '1')
-            loadvr(quad.oprnd2, '2')
-            final_file.write(ret_op +' $t1, $t1, $t2 \n')
 
-        elif quad.op == ":=":
-            loadvr(quad.oprnd1, '1')
-            storerv('1', quad.target)
+    if quad.op == "jump":
+        final_file.write('j L_{} \n'.format(int(quad.target)))
 
-        elif quad.op in rel_op_cimple:
-            ret_op = rel_op_asm[rel_op_cimple.index(quad.op)]
-            loadvr(quad.oprnd1, '1')
-            loadvr(quad.oprnd2, '2')
+    elif quad.op == "halt":
+        final_file.write("li $a0,0 \n")
+        final_file.write("li $v0, 93\n")
+        final_file.write("syscall\n")
 
-            final_file.write(ret_op + ' $t1, $t2, L_{} \n'.format(int(quad.target)))
+    elif quad.op == 'begin_block':
+        first_quads_label_subprogrs[current_subprogram] = quad_num + 1
 
-            #storerv('1', quad.target)
+        # store address (last instruction that pc saw when called function got called) of called function into its
+        # first 4 bytes (bytes 0-3 that correspond to the memory allocated for the return address).
+        final_file.write('sw $ra,0($sp)\n')
 
-        elif quad.op == "in":
-            final_file.write('li $v0, 5\n')
-            final_file.write('syscall\n')
+        if current_subprogram == program_name:
+            final_file.seek(0, 0)  # Takes the cursor to top line
+            final_file.write(".data\n")
+            final_file.write("str_nl: .asciz " + '"\\n" \n')
+            final_file.write(".text\n")
+            #  fusika h j L_main prepei na dimiourgithei otan ksekina h metafrash ths main.
+            final_file.write('j L_{} \n'.format(quad_num))
+            final_file.seek(0, 2)  # Go to the end of the output file
+            final_file.write('move $gp, $sp\n')
 
-        elif quad.op == "out":
-            loadvr(quad.oprnd1, '5')
-            final_file.write('li $v0, 1\n')
-            final_file.write('addi $a0, $t5, 0\n')
-            final_file.write('syscall \n')
-            final_file.write('la $a0, str_nl\n')
-            final_file.write('li $v0, 4\n')
-            final_file.write('syscall \n')
-
-
-        elif quad.op == "ret":
-            loadvr(quad.oprnd1, '1')
-            final_file.write('lw $t0, -8($sp)\n')
-            final_file.write('sw $t1, 0($t0)\n')
-            final_file.write('lw $ra, 0($sp)\n')
+    elif quad.op == 'end_block':
+        if current_subprogram == program_name:
+            final_file.write('j L_{} \n'.format(halt_label))
+        else:
+            final_file.write('lw $ra,0($sp)\n')
             final_file.write('jr $ra\n')
 
 
-        elif quad.op == 'par':
-            if current_subprogram == program_name:
-                func_level = 0
-                framelength = symbol_table[0].offset
+    elif quad.op in num_op_cimple:
+        ret_op = num_op_asm[num_op_cimple.index(quad.op)]
+        loadvr(quad.oprnd1, '1')
+        loadvr(quad.oprnd2, '2')
+        final_file.write(ret_op +' $t1, $t1, $t2 \n')
+        storerv('1', quad.target)
+    elif quad.op == ":=":
+        loadvr(quad.oprnd1, '1')
+        storerv('1', quad.target)
+
+    elif quad.op in rel_op_cimple:
+        ret_op = rel_op_asm[rel_op_cimple.index(quad.op)]
+        loadvr(quad.oprnd1, '1')
+        loadvr(quad.oprnd2, '2')
+
+        final_file.write(ret_op + ' $t1, $t2, L_{} \n'.format(int(quad.target)))
+
+
+
+    elif quad.op == "in":
+        final_file.write('li $v0, 5\n')
+        final_file.write('syscall\n')
+
+    elif quad.op == "out":
+        loadvr(quad.oprnd1, '5')
+        final_file.write('li $v0, 1\n')
+        final_file.write('addi $a0, $t5, 0\n')
+        final_file.write('syscall \n')
+        final_file.write('la $a0, str_nl\n')
+        final_file.write('li $v0, 4\n')
+        final_file.write('syscall \n')
+
+
+    elif quad.op == "ret":
+        loadvr(quad.oprnd1, '1')
+        final_file.write('lw $t0, -8($sp)\n')
+        final_file.write('sw $t1, 0($t0)\n')
+        final_file.write('lw $ra, 0($sp)\n')
+        final_file.write('jr $ra\n')
+
+
+    elif quad.op == 'par':
+        if current_subprogram == program_name:
+            func_level = 0
+            framelength = symbol_table[0].offset
+        else:
+            func, func_level = search_subprogram(current_subprogram)
+            framelength = func.framelength
+
+        if actual_pars_cnt == 0:
+            # move $fp where the end of the caller function's frame is.
+            # remember: the end of the caller function's frame is the start of the
+            # called's frame.
+            final_file.write('addi $fp, $sp, {} \n'.format(-framelength))
+
+        # calculate the offset of the parameter.
+        par_offset = 12 + 4 * (actual_pars_cnt - 1)
+        actual_pars_cnt += 1
+
+        if quad.oprnd2 == 'cv':
+            # find the variable in the symbol table.
+            loadvr(quad.oprnd1, '0')
+            # store it into the frame.
+            final_file.write('sw $t0, {}($fp)\n'.format(-par_offset))
+
+        elif quad.oprnd2 == 'ref':
+            par_entity, par_level = search_var(quad.oprnd1)
+
+            if par_level == func_level:
+                # current level case
+                if is_var_or_cv_par(par_entity):
+                    # store parameter's value at $t0 (fetch it from $sp)
+                    final_file.write('addi $t0, $sp, {}\n'.format(-par_entity.offset))
+                    # store parameter's value at the memory allocated for it in the frame.
+                    final_file.write('sw $t0, {}($fp)\n'.format(-par_offset))
+
+                elif is_ref_par(par_entity):
+
+                    final_file.write('lw $t0, {}($sp)\n'.format(-par_entity.offset))
+                    final_file.write('sw $t0, {}($fp)\n'.format(-par_offset))
             else:
-                func, func_level = search_subprogram(current_subprogram)
-                framelength = func.framelength
+                # ancestor level case
+                if is_var_or_cv_par(par_entity):
+                    gnvl_code(quad.oprnd1)
+                    final_file.write('sw $t0, {}($fp)\n'.format(-par_entity.offset))
 
-            if actual_pars_cnt == 0:
-                # move $fp where the end of the caller function's frame is.
-                # remember: the end of the caller function's frame is the start of the
-                # called's frame.
-                final_file.write('addi $fp, $sp, {} \n'.format(-framelength))
+                elif is_ref_par(par_entity):
+                    gnvl_code(quad.oprnd1)
+                    final_file.write('lw $t0, 0($t0)\n')
+                    final_file.write('sw $t0, {}($fp)\n'.format(-par_offset))
 
-            # calculate the offset of the parameter.
-            par_offset = 12 + 4 * (actual_pars_cnt - 1)
-            actual_pars_cnt += 1
+        elif quad.oprnd2 == 'ret':
+            par_entity, par_level = search_var(quad.oprnd1)
 
-            if quad.oprnd2 == 'cv':
-                # find the variable in the symbol table.
-                loadvr(quad.oprnd1, '0')
-                # store it into the frame.
-                final_file.write('sw $t0, {}($fp)\n'.format(-par_offset))
+            # after retrieving the value of the value to be returned from the called function
+            # we need to store it into the bytes 8-11 of $fp, which are dedicated to the storage
+            # of the value of the returned variable.
+            final_file.write('addi $t0, $sp, {}\n'.format(-par_entity.offset))
+            final_file.write('sw $t0, -8($fp)\n')
 
-            elif quad.oprnd2 == 'ref':
-                par_entity, par_level = search_var(quad.oprnd1)
+    elif quad.op == "call":
+        # caller function is the subprogram which name is the 2nd parameter
+        # what if caller function is the main program? Hint: the callee is never in the same level
+        if current_subprogram == program_name:
+            caller_level = 0
+            caller_framelength = symbol_table[0].offset
+        else:
+            caller, caller_level = search_subprogram(current_subprogram)
+            caller_framelength = caller.framelength
 
-                if par_level == func_level:
-                    # current level case
-                    if is_var_or_cv_par(par_entity):
-                        # store parameter's value at $t0 (fetch it from $sp)
-                        final_file.write('addi $t0, $sp, {}\n'.format(-par_entity.offset))
-                        # store parameter's value at the memory allocated for it in the frame.
-                        final_file.write('sw $t0, {}($fp)\n'.format(-par_offset))
+        called, called_level = search_subprogram(quad.oprnd1)
+        called_framelength = called.framelength
 
-                    elif is_ref_par(par_entity):
+        if caller_level == called_level:
+            # both caller and called have the same parent. Thus, store caller's access link into $t0
+            # and then store $t0's value into $fp's 4-7 bytes (bytes that correspond to the memory allocated
+            # for the access link storage).
+            final_file.write('lw $t0,-4($sp)\n')
+            final_file.write('sw $t0,-4($fp)\n')
+        else:
+            # if caller's level is greater than the called's level, then caller is by default
+            # called's parent. Thus, just store the access link's pointer into into $fp's 4-7 bytes.
+            final_file.write('sw $sp, -4($fp)\n')
 
-                        final_file.write('lw $t0, {}($sp)\n'.format(-par_entity.offset))
-                        final_file.write('sw $t0, {}($fp)\n'.format(-par_offset))
-                else:
-                    # ancestor level case
-                    if is_var_or_cv_par(par_entity):
-                        gnvl_code(quad.oprnd1)
-                        final_file.write('sw $t0, {}($fp)\n'.format(-par_entity.offset))
+        final_file.write('addi $sp, $sp, {}\n'.format(-caller_framelength))
+        final_file.write('jal L_{}\n'.format(str(first_quads_label_subprogrs.get(called.name))))
+        final_file.write('addi $sp, $sp, {}\n' .format(caller_framelength))
 
-                    elif is_ref_par(par_entity):
-                        gnvl_code(quad.oprnd1)
-                        final_file.write('lw $t0, 0($t0)\n')
-                        final_file.write('sw $t0, {}($fp)\n'.format(-par_offset))
-
-            elif quad.oprnd2 == 'ret':
-                par_entity, par_level = search_var(quad.oprnd1)
-
-                # after retrieving the value of the value to be returned from the called function
-                # we need to store it into the bytes 8-11 of $fp, which are dedicated to the storage
-                # of the value of the returned variable.
-                final_file.write('addi $t0, $sp, {}\n'.format(-par_entity.offset))
-                final_file.write('sw $t0, -8($fp)\n')
-
-        elif quad.op == "call":
-            # caller function is the subprogram which name is the 2nd parameter
-            # what if caller function is the main program? Hint: the callee is never in the same level
-            if current_subprogram == program_name:
-                caller_level = 0
-                caller_framelength = symbol_table[0].offset
-            else:
-                caller, caller_level = search_subprogram(current_subprogram)
-                caller_framelength = caller.framelength
-
-            called, called_level = search_subprogram(quad.oprnd1)
-            called_framelength = called.framelength
-
-            if caller_level == called_level:
-                # both caller and called have the same parent. Thus, store caller's access link into $t0
-                # and then store $t0's value into $fp's 4-7 bytes (bytes that correspond to the memory allocated
-                # for the access link storage).
-                final_file.write('lw $t0,-4($sp)\n')
-                final_file.write('sw $t0,-4($fp)\n')
-            else:
-                # if caller's level is greater than the called's level, then caller is by default
-                # called's parent. Thus, just store the access link's pointer into into $fp's 4-7 bytes.
-                final_file.write('sw $sp, -4($fp)\n')
-
-            final_file.write('addi $sp, $sp, {}\n'.format(-caller_framelength))
-            final_file.write('jal L_{}\n'.format(str(first_quads_label_subprogrs.get(called.name))))
-            final_file.write('addi $sp, $sp, {}\n' .format(caller_framelength))
-
-
+    final_file.flush()
 
 
 
@@ -1788,9 +1784,12 @@ def main():
 
     openfile(input_file)
     parser()
-
+    final_file.close()
     create_int_file()
     create_c_file()
+
+
+
 
 
 
