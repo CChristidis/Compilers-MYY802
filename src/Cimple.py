@@ -25,6 +25,8 @@ first_quads_label_subprogrs = {}  # store every declared subrpogram's first quad
 symbol_table = []
 current_subprogram = []
 
+
+halt_label = 0
 """ activation record layout (numbered in indices): """
 # 0-th index: subprogram's return address. Size: 4 bytes
 # 1-st index: access link (It refers to information stored in other activation records that is non-local.). Size: 4 bytes
@@ -511,7 +513,7 @@ def loadvr(v, reg):
             elif is_ancestor_level_ref_case(entity, entity_level, current_lvl):
                 gnvl_code(v)
                 # address found. Store it into t0.
-                final_file.write('lw $t0, 0(%t0)\n')
+                final_file.write('lw $t0, 0($t0)\n')
                 # value found. Store it into reg.
                 final_file.write('lw $t{}'.format(int(reg)) + ' ,0($t0)\n')
 
@@ -538,14 +540,14 @@ def storerv(reg, v):
         elif is_ancestor_level_cv_case(entity, entity_level, current_lvl):
             gnvl_code(v)
             # value found. Store it into reg.
-            final_file.write('lw $t{}'.format(int(reg)) + ',0($t0)\n')
+            final_file.write('sw $t{}'.format(int(reg)) + ',0($t0)\n')
 
         elif is_ancestor_level_ref_case(entity, entity_level, current_lvl):
             gnvl_code(v)
             # address found. Store it into t0.
-            final_file.write('lw $t0, 0(%t0)\n')
+            final_file.write('lw $t0, 0($t0)\n')
             # value found. Store it into reg.
-            final_file.write('lw $t{}'.format(int(reg)) + ' ,0($t0)\n')
+            final_file.write('sw $t{}'.format(int(reg)) + ' ,0($t0)\n')
 
 
 
@@ -572,7 +574,7 @@ def prepend_stuff_at_file(quad_num):
 
 
 def create_asm_file(quad, current_subprogram, quad_num):
-    global actual_pars_cnt, first_quads_label_subprogrs
+    global actual_pars_cnt, first_quads_label_subprogrs, halt_label
 
 
 
@@ -583,10 +585,12 @@ def create_asm_file(quad, current_subprogram, quad_num):
     rel_op_asm = ('beq', 'bne', 'blt', 'bgt', 'ble', 'bge')
 
     with open('test.asm', 'a', encoding='utf-8') as final_file:
-        if quad.op != "halt" and "T_" not in str(quad.oprnd1):
-            final_file.write('L_' + str(quad_num) + ':' + '\n')
-        elif quad.op == "halt":
-            final_file.write('exit:\n')
+
+        if quad.op == "halt":
+            halt_label = quad_num
+
+        final_file.write('L_' + str(quad_num) + ':' + '\n')
+
 
         if quad.op == "jump":
             final_file.write('j L_{} \n'.format(int(quad.target)))
@@ -607,7 +611,7 @@ def create_asm_file(quad, current_subprogram, quad_num):
 
         elif quad.op == 'end_block':
             if current_subprogram == program_name:
-                final_file.write('j exit \n')
+                final_file.write('j L_{} \n'.format(halt_label))
             else:
                 final_file.write('lw $ra,0($sp)\n')
                 final_file.write('jr $ra\n')
@@ -630,6 +634,8 @@ def create_asm_file(quad, current_subprogram, quad_num):
 
             final_file.write(ret_op + ' $t1, $t2, L_{} \n'.format(int(quad.target)))
 
+            #storerv('1', quad.target)
+
         elif quad.op == "in":
             final_file.write('li $v0, 5\n')
             final_file.write('syscall\n')
@@ -648,6 +654,9 @@ def create_asm_file(quad, current_subprogram, quad_num):
             loadvr(quad.oprnd1, '1')
             final_file.write('lw $t0, -8($sp)\n')
             final_file.write('sw $t1, 0($t0)\n')
+            final_file.write('lw $ra, 0($sp)\n')
+            final_file.write('jr $ra\n')
+
 
         elif quad.op == 'par':
             if current_subprogram == program_name:
@@ -656,27 +665,40 @@ def create_asm_file(quad, current_subprogram, quad_num):
             else:
                 func, func_level = search_subprogram(current_subprogram)
                 framelength = func.framelength
-            final_file.write('addi $fp, $sp, {} \n'.format(-framelength))
 
-            par_offset = 12 + 4 * actual_pars_cnt
+            if actual_pars_cnt == 0:
+                # move $fp where the end of the caller function's frame is.
+                # remember: the end of the caller function's frame is the start of the
+                # called's frame.
+                final_file.write('addi $fp, $sp, {} \n'.format(-framelength))
+
+            # calculate the offset of the parameter.
+            par_offset = 12 + 4 * (actual_pars_cnt - 1)
             actual_pars_cnt += 1
 
             if quad.oprnd2 == 'cv':
+                # find the variable in the symbol table.
                 loadvr(quad.oprnd1, '0')
+                # store it into the frame.
                 final_file.write('sw $t0, {}($fp)\n'.format(-par_offset))
 
             elif quad.oprnd2 == 'ref':
                 par_entity, par_level = search_var(quad.oprnd1)
 
                 if par_level == func_level:
+                    # current level case
                     if is_var_or_cv_par(par_entity):
+                        # store parameter's value at $t0 (fetch it from $sp)
                         final_file.write('addi $t0, $sp, {}\n'.format(-par_entity.offset))
+                        # store parameter's value at the memory allocated for it in the frame.
                         final_file.write('sw $t0, {}($fp)\n'.format(-par_offset))
 
                     elif is_ref_par(par_entity):
+
                         final_file.write('lw $t0, {}($sp)\n'.format(-par_entity.offset))
                         final_file.write('sw $t0, {}($fp)\n'.format(-par_offset))
                 else:
+                    # ancestor level case
                     if is_var_or_cv_par(par_entity):
                         gnvl_code(quad.oprnd1)
                         final_file.write('sw $t0, {}($fp)\n'.format(-par_entity.offset))
@@ -689,6 +711,9 @@ def create_asm_file(quad, current_subprogram, quad_num):
             elif quad.oprnd2 == 'ret':
                 par_entity, par_level = search_var(quad.oprnd1)
 
+                # after retrieving the value of the value to be returned from the called function
+                # we need to store it into the bytes 8-11 of $fp, which are dedicated to the storage
+                # of the value of the returned variable.
                 final_file.write('addi $t0, $sp, {}\n'.format(-par_entity.offset))
                 final_file.write('sw $t0, -8($fp)\n')
 
@@ -706,10 +731,15 @@ def create_asm_file(quad, current_subprogram, quad_num):
             called_framelength = called.framelength
 
             if caller_level == called_level:
+                # both caller and called have the same parent. Thus, store caller's access link into $t0
+                # and then store $t0's value into $fp's 4-7 bytes (bytes that correspond to the memory allocated
+                # for the access link storage).
                 final_file.write('lw $t0,-4($sp)\n')
                 final_file.write('sw $t0,-4($fp)\n')
             else:
-                final_file.write('sw $sp, 4($fp)\n')
+                # if caller's level is greater than the called's level, then caller is by default
+                # called's parent. Thus, just store the access link's pointer into into $fp's 4-7 bytes.
+                final_file.write('sw $sp, -4($fp)\n')
 
             final_file.write('addi $sp, $sp, {}\n'.format(-caller_framelength))
             final_file.write('jal L_{}\n'.format(str(first_quads_label_subprogrs.get(called.name))))
@@ -1761,9 +1791,6 @@ def main():
 
     create_int_file()
     create_c_file()
-
-
-
 
 
 
