@@ -1,6 +1,6 @@
 # Compilers-MYY802
 
-Project for undergraduate compulsory course "Compliers-MYY802". 
+Project for undergraduate, compulsory course "Compilers-MYY802". 
 The goal of this project is to create a compiler for the minimal programming lanuage "Cimple".
 Cimple resembles C syntactically. 
 
