@@ -1,12 +1,12 @@
-# Compilers-MYY802
+# **Cimple** compiler
 
-Project for undergraduate, compulsory course "Compilers-MYY802". 
+Project for undergraduate, compulsory course "Compilers". 
 The goal of this project is to create a compiler for the minimal programming lanuage "Cimple".
 Cimple resembles C syntactically. 
 
 A Cimple program's extension is **.ci** .
 
-Cimple only supports **integers** as data types and **call-by-value (in)** and **call-by-reference (inout)** as evaluation strategies.
+Cimple only supports integers as data types and call-by-value (in) and call-by-reference (inout) as evaluation strategies.
  
 # Cimple's syntax grammar:
 
