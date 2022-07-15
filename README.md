@@ -1,4 +1,4 @@
-# **Cimple** compiler
+# About:
 
 Project for undergraduate, compulsory course "Compilers". 
 The goal of this project is to create a compiler for the minimal programming lanuage "Cimple".
